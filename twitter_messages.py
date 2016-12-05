@@ -84,10 +84,12 @@ class Plugin:
 			self.bot.log.info('Twitter Stream: Heartbeat Timeout')
 		elif 'retweeted_status' in tweet:
 			self.bot.log.info('Twitter Stream: Retweet')
-			# self.bot.log.debug(str(tweet))
+			self.bot.log.debug(str(tweet))
 		elif 'text' in tweet:
 			self.bot.log.info('Twitter Stream: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
-			# self.bot.log.debug(str(tweet))
+			self.bot.log.debug(str(tweet))
+			screen_name = tweet['user']['screen_name']
+			url = 'https://twitter.com/' + screen_name + '/status/' + tweet['id_str']
 			text = html.unescape(tweet['text'])
 			if 'extended_tweet' in tweet and 'full_text' in tweet['extended_tweet']:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
@@ -96,11 +98,16 @@ class Plugin:
 				reply_to = tweet['in_reply_to_screen_name']
 				if reply_to == None or reply_to == user:
 					self.bot.privmsg(self.channels[user], 
-						self.tweet_format.format(screen_name=tweet['user']['screen_name'], text=text))
+						self.tweet_format.format(screen_name=screen_name, text=text, url=url))
 			if self.conversation_channel:
 				self.bot.privmsg(self.conversation_channel,
-					self.conversation_format.format(screen_name=tweet['user']['screen_name'], text=text))
+					self.conversation_format.format(screen_name=screen_name, text=text, url=url))
+		elif 'delete' in tweet:
+			self.bot.log.info('Twitter Stream: Deleted tweet' + tweet['delete']['status']['id_str'] )
+			self.bot.log.debug(str(tweet))
+		elif 'limit' in tweet:
+			self.bot.log.critical('Twitter Stream: LIMIT NOTICE')
 		else:
 			self.bot.log.info('Twitter Stream: Data')
-			# self.bot.log.debug(str(tweet))
+			self.bot.log.debug(str(tweet))
 

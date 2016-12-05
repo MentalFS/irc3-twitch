@@ -46,47 +46,48 @@ class Plugin:
 		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
 		self.config = self.bot.config.get(__name__, {})
-		self.twitter_ids = []
 		self.channels = {}
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.conversation_channel = self.config.get('conversation_channel')
 		self.conversation_format = self.config.get('conversation_format', '@{screen_name}: {text}')
 
 	def connection_made(self):
-		self.bot.log.info('connected')
+		self.bot.log.info('Connected')
+		ids = []
 		channel_count = 0
 		for config_entry, channel in self.config.items():
 			if config_entry and config_entry.startswith('@'):
 				screen_name = config_entry[1:]
 				details = self.twitter_api.users.show(screen_name=screen_name)
-				self.twitter_ids.append(details["id_str"])
+				ids.append(details["id_str"])
 				if channel.startswith('#'):
 					self.channels[screen_name.lower()] = channel
 					channel_count = channel_count + 1
-		threading.Thread(target=self.receive_stream).start()
+		threading.Thread(target=self.receive_stream, kwargs={'ids': ids}).start()
 		self.bot.log.info(str(channel_count) + ' channels streaming')
 
-	def receive_stream(self):
+	def receive_stream(self, ids):
 		while True:
-			if not self.twitter_ids: return
-			follow = ','.join(self.twitter_ids)
+			if not ids: return
+			follow = ','.join(ids)
 			stream = self.twitter_stream.statuses.filter(follow=follow)
+			self.bot.log.info('stream connected: '+follow)
 			for tweet in stream:
 				self.bot.loop.run_in_executor(None, self.handle_tweet, tweet)
-			self.bot.log.critical('Twitter Stream: Connection lost')
+			self.bot.log.critical('Stream: Connection lost')
 
 	def handle_tweet(self, tweet):
 		if tweet is None:
-			 self.bot.log.info('Twitter Stream: None')
+			 self.bot.log.info('Stream data: None')
 		elif tweet is Timeout:
-			self.bot.log.info('Twitter Stream: Timeout')
+			self.bot.log.info('Stream data: Timeout')
 		elif tweet is Hangup:
-			self.bot.log.info('Twitter Stream: Heartbeat Timeout')
+			self.bot.log.info('Stream data: Heartbeat Timeout')
 		elif 'retweeted_status' in tweet:
-			self.bot.log.info('Twitter Stream: Retweet')
+			self.bot.log.info('Stream data: Retweet - ignored')
 			self.bot.log.debug(str(tweet))
 		elif 'text' in tweet:
-			self.bot.log.info('Twitter Stream: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
+			self.bot.log.info('Stream data: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
 			self.bot.log.debug(str(tweet))
 			screen_name = tweet['user']['screen_name']
 			url = 'https://twitter.com/' + screen_name + '/status/' + tweet['id_str']
@@ -103,11 +104,11 @@ class Plugin:
 				self.bot.privmsg(self.conversation_channel,
 					self.conversation_format.format(screen_name=screen_name, text=text, url=url))
 		elif 'delete' in tweet:
-			self.bot.log.info('Twitter Stream: Deleted tweet' + tweet['delete']['status']['id_str'] )
+			self.bot.log.info('Stream data: Deleted tweet' + tweet['delete']['status']['id_str'] )
 			self.bot.log.debug(str(tweet))
 		elif 'limit' in tweet:
-			self.bot.log.critical('Twitter Stream: LIMIT NOTICE')
+			self.bot.log.critical('Stream data: LIMIT NOTICE')
 		else:
-			self.bot.log.info('Twitter Stream: Data')
+			self.bot.log.info('Stream data: unknown')
 			self.bot.log.debug(str(tweet))
 

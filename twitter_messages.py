@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-import irc3, asyncio, threading, html
+import irc3, asyncio
+import threading, html, time, traceback
+from irc3.utils import as_list
 from twitter.stream import Timeout, HeartbeatTimeout, Hangup
 
 __doc__ = '''
@@ -14,26 +16,22 @@ You must configure `irc3.plugins.social` properly.
 Additionally, your config has to contain something like this:
 
 [twitter_messages]
-# Optional: customize message in channel
+## Optional: default channel
+tweet_channel = #channel
+
+## Optional: customize message in channel
 tweet_format = "@{screen_name}: {text}"
 
-# some feeds: @screen_name = #channel
-@twitch = #twitch
+
+## some twitter feeds:
+identifier = @screen_name
+identifier.channels = #channel1 #channel2
+[...]
 
 '''
 
-#TODO file logs wit JSON data
-#TODO enable posting to multiple channels
-
-#TODO expanding URLs and media attachments
-
-#NOTE consider two streams: one for full conversations, one to filter by screen_name
-#		pro: it would be possible to exclude from conversation_channel by screen_name
-#		con: possibly a more complicated configuration file
-
-#NOTE consider not using social plugin, this could enable the use of better stream endpoints
-
-#NOTE command to add/remove/configure twitter channels - check if writing to config is possible
+#TODO detecting fake replies
+#TODO better self-answer detection
 
 @irc3.plugin
 class Plugin:
@@ -46,48 +44,77 @@ class Plugin:
 		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
 		self.config = self.bot.config.get(__name__, {})
-		self.channels = {}
+		self.twitter_channels = {}
+		self.status_channels = as_list(self.config.get('status_channels'))
+		self.tweet_channels = as_list(self.config.get('tweet_channels'))
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
-		self.conversation_channel = self.config.get('conversation_channel')
+		self.conversation_channels = as_list(self.config.get('conversation_channels'))
 		self.conversation_format = self.config.get('conversation_format', '@{screen_name}: {text}')
 
 	def connection_made(self):
 		self.bot.log.info('Connected')
-		ids = []
-		channel_count = 0
-		for config_entry, channel in self.config.items():
-			if config_entry and config_entry.startswith('@'):
-				screen_name = config_entry[1:]
+		tweet_ids = []
+		conversation_ids = []
+		for config_key, config_value in self.config.items():
+			if config_value and str(config_value).startswith('@') and not config_key.endswith('_format'):
+				screen_name = config_value[1:]
 				details = self.twitter_api.users.show(screen_name=screen_name)
-				ids.append(details["id_str"])
-				if channel.startswith('#'):
-					self.channels[screen_name.lower()] = channel
-					channel_count = channel_count + 1
-		threading.Thread(target=self.receive_stream, kwargs={'ids': ids}).start()
-		self.bot.log.info(str(channel_count) + ' channels streaming')
+				if (self.config.get(config_key + '.conversation', False)):
+					conversation_ids.append(details["id_str"])
+				else:
+					tweet_ids.append(details["id_str"])
+				self.twitter_channels[screen_name.lower()] = self.tweet_channels
+				if self.config.get(config_key + '.channels'):
+					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_key+'.channels'))
+		threading.Thread(target=self.receive_stream, kwargs={'ids': tweet_ids, 'conversation': False}).start()
+		threading.Thread(target=self.receive_stream, kwargs={'ids': conversation_ids, 'conversation': True}).start()
 
-	def receive_stream(self, ids):
+	def receive_stream(self, ids, conversation):
+		if not ids: return
+		if conversation: time.sleep(5)
+		output_prefix = 'Conversation stream' if conversation else 'Tweet stream'
+		exception_count = 0;
 		while True:
-			if not ids: return
-			follow = ','.join(ids)
-			stream = self.twitter_stream.statuses.filter(follow=follow)
-			self.bot.log.info('stream connected: '+follow)
-			for tweet in stream:
-				self.bot.loop.run_in_executor(None, self.handle_tweet, tweet)
-			self.bot.log.critical('Stream: Connection lost')
+			try:
+				follow = ','.join(ids)
+				stream = self.twitter_stream.statuses.filter(follow=follow)
+				self.bot.log.info(output_prefix + ' connected: '+follow)
+				self.send_status(output_prefix + ' connected.')
+				for tweet in stream:
+					self.bot.loop.run_in_executor(None, self.handle_tweet, tweet, conversation)
+				self.bot.log.critical(output_prefix + ': Connection lost')
+				self.send_status(output_prefix + ': Connection lost')
+			except Exception as e:
+				exception_count = exception_count + 1;
+				self.bot.log.critical(output_prefix + ': EXCEPTION ' + exception_count)
+				self.bot.log.exception(e)
+				self.send_status(output_prefix + ': EXCEPTION ' + exception_count);
+				time.sleep(120 if conversation else 150)
+			finally:
+				time.sleep(60)
+				self.bot.log.info(output_prefix + ' retrying...')
+				self.send_status(output_prefix + ' retrying...')
 
-	def handle_tweet(self, tweet):
+	def send_status(self, status):
+		if self.status_channels:
+			for status_channel in self.status_channels:
+				self.bot.privmsg(status_channel, status)
+
+
+	def handle_tweet(self, tweet, conversation):
+		output_prefix = 'Conversation stream' if conversation else 'Tweet stream'
 		if tweet is None:
-			 self.bot.log.info('Stream data: None')
+			 self.bot.log.info(output_prefix + ' data: None')
 		elif tweet is Timeout:
-			self.bot.log.info('Stream data: Timeout')
+			self.bot.log.info(output_prefix + ' data: Timeout')
 		elif tweet is Hangup:
-			self.bot.log.info('Stream data: Heartbeat Timeout')
+			self.bot.log.info(output_prefix + ' data: Heartbeat Timeout')
 		elif 'retweeted_status' in tweet:
-			self.bot.log.info('Stream data: Retweet - ignored')
+			self.bot.log.debug(output_prefix + ' data: Retweet ' + tweet['id_str'])
+			# + '/' + tweet['retweeted_status']['id_str'])
 			self.bot.log.debug(str(tweet))
 		elif 'text' in tweet:
-			self.bot.log.info('Stream data: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
+			self.bot.log.info(output_prefix + ' data: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
 			self.bot.log.debug(str(tweet))
 			screen_name = tweet['user']['screen_name']
 			url = 'https://twitter.com/' + screen_name + '/status/' + tweet['id_str']
@@ -95,20 +122,28 @@ class Plugin:
 			if 'extended_tweet' in tweet and 'full_text' in tweet['extended_tweet']:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
 			user = tweet['user']['screen_name'].lower()
-			if user in self.channels and self.channels[user] != self.conversation_channel:
+			processed_channels = []
+			if user in self.twitter_channels:
 				reply_to = tweet['in_reply_to_screen_name']
-				if reply_to == None or reply_to == user:
-					self.bot.privmsg(self.channels[user], 
-						self.tweet_format.format(screen_name=screen_name, text=text, url=url))
-			if self.conversation_channel:
-				self.bot.privmsg(self.conversation_channel,
-					self.conversation_format.format(screen_name=screen_name, text=text, url=url))
+				if reply_to == None or reply_to.lower() == user:
+					for tweet_channel in self.twitter_channels[user]:
+						if not tweet_channel in processed_channels:
+							self.bot.privmsg(tweet_channel,
+								self.tweet_format.format(screen_name=screen_name, text=text, url=url))
+							processed_channels.append(tweet_channel)
+			if conversation and self.conversation_channels:
+				for conversation_channel in self.conversation_channels:
+					if not conversation_channel in processed_channels:
+						self.bot.privmsg(conversation_channel,
+							self.conversation_format.format(screen_name=screen_name, text=text, url=url))
+						processed_channels.append(conversation_channel)
 		elif 'delete' in tweet:
-			self.bot.log.info('Stream data: Deleted tweet' + tweet['delete']['status']['id_str'] )
+			self.bot.log.info(output_prefix + ' data: Deleted tweet ' + tweet['delete']['status']['id_str'] )
 			self.bot.log.debug(str(tweet))
 		elif 'limit' in tweet:
-			self.bot.log.critical('Stream data: LIMIT NOTICE')
-		else:
-			self.bot.log.info('Stream data: unknown')
+			self.bot.log.critical(output_prefix + ' data: LIMIT NOTICE')
 			self.bot.log.debug(str(tweet))
+		else:
+			self.bot.log.info(output_prefix + ' data: unknown')
+			self.bot.log.info(str(tweet))
 

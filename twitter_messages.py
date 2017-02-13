@@ -33,6 +33,12 @@ identifier.channels = #channel1 #channel2
 #TODO detecting fake replies
 #TODO better self-answer detection
 
+#NOTE Possilbe rewrite plan:
+#     * stand-alone main, twitter-stream from account
+#     * other services like discord or Twitch-feed as output
+#     * hashtag-based control
+#     * no hidden conversation tracking
+
 @irc3.plugin
 class Plugin:
 	requires = [
@@ -111,10 +117,9 @@ class Plugin:
 			self.bot.log.info(output_prefix + ' data: Heartbeat Timeout')
 		elif 'retweeted_status' in tweet:
 			self.bot.log.debug(output_prefix + ' data: Retweet ' + tweet['id_str'])
-			# + '/' + tweet['retweeted_status']['id_str'])
 			self.bot.log.debug(str(tweet))
 		elif 'text' in tweet:
-			self.bot.log.info(output_prefix + ' data: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
+			self.bot.log.debug(output_prefix + ' data: Tweet @' + tweet['user']['screen_name'] + '/' + tweet['id_str'] )
 			self.bot.log.debug(str(tweet))
 			screen_name = tweet['user']['screen_name']
 			url = 'https://twitter.com/' + screen_name + '/status/' + tweet['id_str']

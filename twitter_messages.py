@@ -130,7 +130,7 @@ class Plugin:
 			processed_channels = []
 			if user in self.twitter_channels:
 				reply_to = tweet['in_reply_to_screen_name']
-				if reply_to == None or reply_to.lower() == user:
+				if (reply_to == None or reply_to.lower() == user) and (not text.startswith('@') or text.lower().startswith('@' + user)):
 					for tweet_channel in self.twitter_channels[user]:
 						if not tweet_channel in processed_channels:
 							self.bot.privmsg(tweet_channel,

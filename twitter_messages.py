@@ -148,7 +148,7 @@ class Plugin:
 							self.bot.join(tweet_channel)
 						self.bot.privmsg(tweet_channel,
 							self.tweet_format.format(screen_name=screen_name, text=text, url=url))
-						if auto_join_and_part and not tweet_channel in self.status_channels:
+						if self.auto_join_and_part and not tweet_channel in self.status_channels:
 							self.bot.loop.call_later(self.auto_part_time, self.bot.part, tweet_channel)
 						processed_channels.append(tweet_channel)
 			if user_tweet and self.status_channels:

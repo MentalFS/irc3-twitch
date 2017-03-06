@@ -82,31 +82,31 @@ class Plugin:
 			try:
 				follow = ','.join(ids)
 				stream = self.twitter_stream.statuses.filter(follow=follow)
-				self.send_status('Stream connected.')
+				self.bot.loop.run_in_executor(None, self.send_status, 'Stream connected.')
 				self.bot.log.info('IDs: ' + follow)
 				for tweet in stream:
 					self.bot.loop.run_in_executor(None, self.handle_data, tweet)
 					data_count = data_count + 1
-					if count % 100 == 0:
-						self.send_status('Stream received %d packages' % count)
-				self.send_status('Stream Connection lost')
+					if data_count % 100 == 0:
+						self.bot.loop.run_in_executor(None, self.send_status, 'Stream received %d packages' % data_count)
+				self.bot.loop.run_in_executor(None, self.send_status, 'Stream Connection lost')
 			except Exception as e:
 				exception_count = exception_count + 1
-				self.send_status('Stream EXCEPTION ' + exception_count)
+				self.bot.loop.run_in_executor(None, self.send_status, 'Stream EXCEPTION %d' % exception_count)
 				self.bot.log.exception(e)
 				time.sleep(120)
 			finally:
 				time.sleep(60)
-				self.send_status('Stream connection retrying...')
+				self.bot.loop.run_in_executor(None, self.send_status, 'Stream connection retrying...')
 
 	def handle_data(self, data):
 		if data is None:
 			 self.bot.log.info('Stream data: None')
 		elif data is Timeout:
-			self.bot.send_status('Stream data: Timeout')
+			self.send_status('Stream data: Timeout')
 			self.bot.log.debug(str(data))
 		elif data is Hangup:
-			self.bot.send_status('Stream data: Heartbeat Timeout')
+			self.send_status('Stream data: Heartbeat Timeout')
 			self.bot.log.debug(str(data))
 		elif 'retweeted_status' in data:
 			self.bot.log.debug('Stream data: Retweet ' + data['id_str'])
@@ -115,7 +115,7 @@ class Plugin:
 			self.bot.log.info('Stream data: Deleted tweet ' + data['delete']['status']['id_str'] )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
-			self.bot.stream_data('Stream data: LIMIT NOTICE')
+			self.send_status('Stream data: LIMIT NOTICE')
 			self.bot.log.critical(str(data))
 		elif 'text' in data:
 			self.bot.log.debug('Stream data: Tweet @' + data['user']['screen_name'] + '/' + data['id_str'] )

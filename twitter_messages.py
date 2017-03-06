@@ -76,53 +76,51 @@ class Plugin:
 
 	def receive_stream(self, ids):
 		if not ids: return
-		exception_count = 0;
+		data_count = 0
+		exception_count = 0
 		while True:
 			try:
 				follow = ','.join(ids)
 				stream = self.twitter_stream.statuses.filter(follow=follow)
-				self.bot.log.info('Stream connected: ' + follow)
 				self.send_status('Stream connected.')
+				self.bot.log.info('IDs: ' + follow)
 				for tweet in stream:
 					self.bot.loop.run_in_executor(None, self.handle_data, tweet)
-				self.bot.log.critical('Stream Connection lost')
+					data_count = data_count + 1
+					if count % 100 == 0:
+						self.send_status('Stream received %d packages' % count)
 				self.send_status('Stream Connection lost')
 			except Exception as e:
-				exception_count = exception_count + 1;
-				self.bot.log.critical('Stream EXCEPTION ' + exception_count)
+				exception_count = exception_count + 1
+				self.send_status('Stream EXCEPTION ' + exception_count)
 				self.bot.log.exception(e)
-				self.send_status('Stream EXCEPTION ' + exception_count);
-				time.sleep(120 if conversation else 150)
+				time.sleep(120)
 			finally:
 				time.sleep(60)
-				self.bot.log.info('Stream connection retrying...')
 				self.send_status('Stream connection retrying...')
-
-	def send_status(self, status):
-		if self.status_channels:
-			for status_channel in self.status_channels:
-				self.bot.privmsg(status_channel, self.status_notification_format.format(message=status))
 
 	def handle_data(self, data):
 		if data is None:
 			 self.bot.log.info('Stream data: None')
 		elif data is Timeout:
-			self.bot.log.info('Stream data: Timeout')
+			self.bot.send_status('Stream data: Timeout')
+			self.bot.log.debug(str(data))
 		elif data is Hangup:
-			self.bot.log.info('Stream data: Heartbeat Timeout')
+			self.bot.send_status('Stream data: Heartbeat Timeout')
+			self.bot.log.debug(str(data))
 		elif 'retweeted_status' in data:
 			self.bot.log.debug('Stream data: Retweet ' + data['id_str'])
 			self.bot.log.debug(str(data))
-		elif 'text' in data:
-			self.bot.log.debug('Stream data: Tweet @' + data['user']['screen_name'] + '/' + data['id_str'] )
-			self.bot.log.debug(str(data))
-			self.handle_tweet(data)
 		elif 'delete' in data:
 			self.bot.log.info('Stream data: Deleted tweet ' + data['delete']['status']['id_str'] )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
-			self.bot.log.critical('Stream data: LIMIT NOTICE')
+			self.bot.stream_data('Stream data: LIMIT NOTICE')
+			self.bot.log.critical(str(data))
+		elif 'text' in data:
+			self.bot.log.debug('Stream data: Tweet @' + data['user']['screen_name'] + '/' + data['id_str'] )
 			self.bot.log.debug(str(data))
+			self.handle_tweet(data)
 		else:
 			self.bot.log.info('Stream data: unknown')
 			self.bot.log.info(str(data))
@@ -164,4 +162,10 @@ class Plugin:
 						if not status_channel in processed_channels:
 							self.bot.privmsg(status_channel, message)
 							processed_channels.append(status_channel)
+
+	def send_status(self, status):
+		self.bot.log.info(status)
+		if self.status_channels:
+			for status_channel in self.status_channels:
+				self.bot.privmsg(status_channel, self.status_notification_format.format(message=status))
 

@@ -48,6 +48,7 @@ class Plugin:
 	def __init__(self, bot):
 		self.bot = bot
 		self.twitter_channels = {}
+		self.status_replies = {}
 		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
 		self.config = self.bot.config.get(__name__, {})
@@ -69,9 +70,15 @@ class Plugin:
 				screen_name = config_value[1:]
 				details = self.twitter_api.users.show(screen_name=screen_name)
 				twitter_ids.append(details["id_str"])
+
 				self.twitter_channels[screen_name.lower()] = self.tweet_channels
 				if self.config.get(config_key + '.channels'):
 					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_key+'.channels'))
+
+				self.status_replies[screen_name.lower()] = False
+				if self.config.get(config_key + '.status_replies'):
+					self.status_replies[screen_name.lower()] = self.config.get(config_key + '.status_replies', False)
+
 		threading.Thread(target=self.receive_stream, kwargs={'ids': twitter_ids}).start()
 
 	def receive_stream(self, ids):
@@ -155,7 +162,7 @@ class Plugin:
 					if self.status_tweet_format:
 							message = self.status_tweet_format.format(screen_name=screen_name, text=text, url=url)
 				else:
-					if self.status_reply_format:
+					if self.status_reply_format and self.status_replies[user]:
 							message = self.status_reply_format.format(screen_name=screen_name, text=text, url=url)
 				if message:
 					for status_channel in self.status_channels:

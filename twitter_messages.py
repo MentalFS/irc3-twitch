@@ -57,6 +57,8 @@ class Plugin:
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.status_channels = as_list(self.config.get('status_channels'))
 		self.status_format = self.config.get('status_format', '{message}')
+		self.debug_channels = as_list(self.config.get('debug_channels'))
+		self.debug_format = self.config.get('debug_format', '{message}')
 
 	def connection_made(self):
 		self.bot.log.info('Connected')

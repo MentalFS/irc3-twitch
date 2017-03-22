@@ -28,9 +28,7 @@ tweet_format = "@{screen_name}: {text}"
 
 ## Optional: status output
 status_channels = #status_channel
-status_notification_format = {message}
-status_tweet_format = "@{screen_name}: {text}"
-
+status_format = {message}
 
 ## some twitter feeds:
 identifier = @screen_name
@@ -58,9 +56,7 @@ class Plugin:
 		self.tweet_channels = as_list(self.config.get('tweet_channels'))
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.status_channels = as_list(self.config.get('status_channels'))
-		self.status_notification_format = self.config.get('status_notification_format', '{message}')
-		self.status_tweet_format = self.config.get('status_tweet_format')
-		self.status_reply_format = self.config.get('status_reply_format')
+		self.status_format = self.config.get('status_format', '{message}')
 
 	def connection_made(self):
 		self.bot.log.info('Connected')
@@ -89,90 +85,81 @@ class Plugin:
 			try:
 				follow = ','.join(ids)
 				stream = self.twitter_stream.statuses.filter(follow=follow)
-				self.bot.loop.run_in_executor(None, self.send_status, 'Stream connected.')
-				self.bot.log.info('IDs: ' + follow)
+				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connected.')
+				self.bot.log.info('IDs: %s' % follow)
 				for tweet in stream:
 					self.bot.loop.run_in_executor(None, self.handle_data, tweet)
 					data_count = data_count + 1
 					if data_count % 100 == 0:
-						self.bot.loop.run_in_executor(None, self.send_status, 'Stream received %d packages' % data_count)
-				self.bot.loop.run_in_executor(None, self.send_status, 'Stream Connection lost')
+						self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection received %d packages' % data_count)
+				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection lost')
 			except Exception as e:
 				exception_count = exception_count + 1
-				self.bot.loop.run_in_executor(None, self.send_status, 'Stream EXCEPTION %d' % exception_count)
+				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter EXCEPTION %d' % exception_count)
 				self.bot.log.exception(e)
 				time.sleep(120)
 			finally:
 				time.sleep(60)
-				self.bot.loop.run_in_executor(None, self.send_status, 'Stream connection retrying...')
+				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection retrying...')
 
 	def handle_data(self, data):
 		if data is None:
-			 self.bot.log.info('Stream data: None')
+			 self.bot.log.info('Twitter sent no data')
 		elif data is Timeout:
-			self.send_status('Stream data: Timeout')
+			self.send_status('Twitter sent a timeout')
 			self.bot.log.debug(str(data))
 		elif data is Hangup:
-			self.send_status('Stream data: Heartbeat Timeout')
+			self.send_status('Twitter sent a heartbeat timeout')
 			self.bot.log.debug(str(data))
 		elif 'retweeted_status' in data:
-			self.bot.log.debug('Stream data: Retweet ' + data['id_str'])
+			self.bot.log.debug('Twitter sent retweet %s' % data['id_str'])
 			self.bot.log.debug(str(data))
 		elif 'delete' in data:
-			self.bot.log.info('Stream data: Deleted tweet ' + data['delete']['status']['id_str'] )
+			self.send_debug('Twitter sent deletion %s' % data['delete']['status']['id_str'] )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
-			self.send_status('Stream data: LIMIT NOTICE')
+			self.send_status('Twitter sent LIMIT NOTICE')
 			self.bot.log.critical(str(data))
 		elif 'text' in data:
-			self.bot.log.debug('Stream data: Tweet @' + data['user']['screen_name'] + '/' + data['id_str'] )
+			self.bot.log.debug('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
 			self.bot.log.debug(str(data))
 			self.handle_tweet(data)
 		else:
-			self.bot.log.info('Stream data: unknown')
+			self.send_status('Twitter sent Unknown Data')
 			self.bot.log.info(str(data))
 
 	def handle_tweet(self, tweet):
 			screen_name = tweet['user']['screen_name']
-			url = 'https://twitter.com/' + screen_name + '/status/' + tweet['id_str']
+			url = 'https://twitter.com/%s/status/%s' % (screen_name, tweet['id_str'])
 			text = html.unescape(tweet['text'])
 			if 'extended_tweet' in tweet and 'full_text' in tweet['extended_tweet']:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
 			user = tweet['user']['screen_name'].lower()
 
-			processed_channels = []
-			user_tweet = user in self.twitter_channels
-			user_no_reply = user_tweet and \
-				(tweet['in_reply_to_screen_name'] == None or tweet['in_reply_to_screen_name'].lower() == user) and \
-				(not text.startswith('@') or text.lower().startswith('@' + user))
+			user_tweet = user in self.twitter_channels \
+				and (tweet['in_reply_to_screen_name'] == None or tweet['in_reply_to_screen_name'].lower() == user) \
+				and (not text.startswith('@') or text.lower().startswith('@' + user))
 
-			if user_tweet and user_no_reply:
+			if user_tweet:
 				for tweet_channel in self.twitter_channels[user]:
-					if not tweet_channel in processed_channels:
-						if self.auto_join_and_part:
-							self.bot.join(tweet_channel)
-						self.bot.privmsg(tweet_channel,
-							self.tweet_format.format(screen_name=screen_name, text=text, url=url))
-						if self.auto_join_and_part and not tweet_channel in self.status_channels:
+					if self.auto_join_and_part:
+						self.bot.join(tweet_channel)
+					self.bot.privmsg(tweet_channel,
+						self.tweet_format.format(screen_name=screen_name, text=text, url=url))
+					if self.auto_join_and_part \
+						and not tweet_channel in self.status_channels \
+						and not tweet_channel in self.debug_channels:
 							self.bot.loop.call_later(self.auto_part_time, self.bot.part, tweet_channel)
-						processed_channels.append(tweet_channel)
-			if user_tweet and self.status_channels:
-				message = None
-				if user_no_reply:
-					if self.status_tweet_format:
-							message = self.status_tweet_format.format(screen_name=screen_name, text=text, url=url)
-				else:
-					if self.status_reply_format and self.status_replies[user]:
-							message = self.status_reply_format.format(screen_name=screen_name, text=text, url=url)
-				if message:
-					for status_channel in self.status_channels:
-						if not status_channel in processed_channels:
-							self.bot.privmsg(status_channel, message)
-							processed_channels.append(status_channel)
+				self.send_debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
 
 	def send_status(self, status):
 		self.bot.log.info(status)
 		if self.status_channels:
 			for status_channel in self.status_channels:
-				self.bot.privmsg(status_channel, self.status_notification_format.format(message=status))
+				self.bot.privmsg(status_channel, self.status_format.format(message=status))
 
+	def send_debug(self, status):
+		self.bot.log.debug(status)
+		if self.debug_channels:
+			for debug_channel in self.debug_channels:
+				self.bot.privmsg(debug_channel, self.debug_format.format(message=status))

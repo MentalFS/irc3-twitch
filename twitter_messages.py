@@ -117,7 +117,7 @@ class Plugin:
 			self.bot.log.debug('Twitter sent retweet %s' % data['id_str'])
 			self.bot.log.debug(str(data))
 		elif 'delete' in data:
-			self.send_debug('Twitter sent deletion %s' % data['delete']['status']['id_str'] )
+			self.send_debug('Twitter sent deletion %s/%s' % (data['delete']['status']['user_id_str'], data['delete']['status']['id_str']) )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
 			self.send_status('Twitter sent LIMIT NOTICE')

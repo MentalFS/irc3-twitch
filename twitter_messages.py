@@ -30,6 +30,9 @@ tweet_format = "@{screen_name}: {text}"
 status_channels = #status_channel
 status_format = {message}
 
+# announce every x'th data package
+status_datacount = 100
+
 ## some twitter feeds:
 identifier = @screen_name
 identifier.channels = #channel1 #channel2
@@ -47,6 +50,7 @@ class Plugin:
 		self.bot = bot
 		self.twitter_channels = {}
 		self.status_replies = {}
+		self.twitter_ids = {}
 		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
 		self.config = self.bot.config.get(__name__, {})
@@ -57,17 +61,17 @@ class Plugin:
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.status_channels = as_list(self.config.get('status_channels'))
 		self.status_format = self.config.get('status_format', '{message}')
+		self.status_datacount = self.config.get('status_datacount', 0)
 		self.debug_channels = as_list(self.config.get('debug_channels'))
 		self.debug_format = self.config.get('debug_format', '{message}')
 
 	def connection_made(self):
 		self.bot.log.info('Connected')
-		twitter_ids = []
 		for config_key, config_value in self.config.items():
 			if config_value and str(config_value).startswith('@') and not config_key.endswith('_format'):
 				screen_name = config_value[1:]
 				details = self.twitter_api.users.show(screen_name=screen_name)
-				twitter_ids.append(details["id_str"])
+				self.twitter_ids[details["id_str"]] = screen_name
 
 				self.twitter_channels[screen_name.lower()] = self.tweet_channels
 				if self.config.get(config_key + '.channels'):
@@ -77,31 +81,32 @@ class Plugin:
 				if self.config.get(config_key + '.status_replies'):
 					self.status_replies[screen_name.lower()] = self.config.get(config_key + '.status_replies', False)
 
-		threading.Thread(target=self.receive_stream, kwargs={'ids': twitter_ids}).start()
+		threading.Thread(target=self.receive_stream).start()
 
-	def receive_stream(self, ids):
-		if not ids: return
-		data_count = 0
+	def receive_stream(self):
 		exception_count = 0
+		loop_count = 0
 		while True:
+			data_count = 0
 			try:
-				follow = ','.join(ids)
+				follow = ','.join(self.twitter_ids.keys())
 				stream = self.twitter_stream.statuses.filter(follow=follow)
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connected.')
 				self.bot.log.info('IDs: %s' % follow)
 				for tweet in stream:
 					self.bot.loop.run_in_executor(None, self.handle_data, tweet)
 					data_count = data_count + 1
-					if data_count % 100 == 0:
+					if self.status_datacount and data_count % self.status_datacount == 0:
 						self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection received %d packages' % data_count)
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection lost')
 			except Exception as e:
 				exception_count = exception_count + 1
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter EXCEPTION %d' % exception_count)
 				self.bot.log.exception(e)
-				time.sleep(120)
+				time.sleep(10 * exception_count)
 			finally:
-				time.sleep(60)
+				loop_count = loop_count + 1
+				time.sleep(20 + loop_count)
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection retrying...')
 
 	def handle_data(self, data):
@@ -117,7 +122,10 @@ class Plugin:
 			self.bot.log.debug('Twitter sent retweet %s' % data['id_str'])
 			self.bot.log.debug(str(data))
 		elif 'delete' in data:
-			self.send_debug('Twitter sent deletion %s/%s' % (data['delete']['status']['user_id_str'], data['delete']['status']['id_str']) )
+			delete_user = data['delete']['status']['user_id_str']
+			if delete_user in self.twitter_ids:
+				delete_user = '@%s' % self.twitter_ids[delete_user]
+			self.send_debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']) )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
 			self.send_status('Twitter sent LIMIT NOTICE')

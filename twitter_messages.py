@@ -30,9 +30,6 @@ tweet_format = "@{screen_name}: {text}"
 status_channels = #status_channel
 status_format = {message}
 
-# announce every x'th data package
-status_datacount = 100
-
 ## some twitter feeds:
 identifier = @screen_name
 identifier.channels = #channel1 #channel2
@@ -61,9 +58,9 @@ class Plugin:
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.status_channels = as_list(self.config.get('status_channels'))
 		self.status_format = self.config.get('status_format', '{message}')
-		self.status_datacount = self.config.get('status_datacount', 0)
 		self.debug_channels = as_list(self.config.get('debug_channels'))
 		self.debug_format = self.config.get('debug_format', '{message}')
+		self.debug_datacount = self.config.get('debug_datacount', 0)
 
 	def connection_made(self):
 		self.bot.log.info('Connected')
@@ -96,8 +93,8 @@ class Plugin:
 				for tweet in stream:
 					self.bot.loop.run_in_executor(None, self.handle_data, tweet)
 					data_count = data_count + 1
-					if self.status_datacount and data_count % self.status_datacount == 0:
-						self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection received %d packages' % data_count)
+					if self.debug_datacount and data_count % self.debug_datacount == 0:
+						self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter connection received %d packages' % data_count)
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection lost')
 			except Exception as e:
 				exception_count = exception_count + 1
@@ -116,6 +113,9 @@ class Plugin:
 			self.send_status('Twitter sent a timeout')
 			self.bot.log.debug(str(data))
 		elif data is Hangup:
+			self.send_status('Twitter sent a hangup')
+			self.bot.log.debug(str(data))
+		elif data is HeartbeatTimeout:
 			self.send_status('Twitter sent a heartbeat timeout')
 			self.bot.log.debug(str(data))
 		elif 'retweeted_status' in data:
@@ -161,6 +161,9 @@ class Plugin:
 						and not tweet_channel in self.debug_channels:
 							self.bot.loop.call_later(self.auto_part_time, self.bot.part, tweet_channel)
 				self.send_debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
+			if user in self.twitter_channels and not user_tweet:
+				self.send_debug('Ignored reply %s' % url)
+
 
 	def send_status(self, status):
 		self.bot.log.info(status)

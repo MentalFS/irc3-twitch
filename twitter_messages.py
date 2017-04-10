@@ -21,7 +21,7 @@ auto_join_and_part = true
 auto_part_time = 180
 
 ## Optional: default channel
-tweet_channel = #channel
+tweet_channels = #channel
 
 ## Optional: customize message in channel
 tweet_format = "@{screen_name}: {text}"
@@ -46,7 +46,6 @@ class Plugin:
 	def __init__(self, bot):
 		self.bot = bot
 		self.twitter_channels = {}
-		self.status_replies = {}
 		self.twitter_ids = {}
 		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
@@ -73,10 +72,6 @@ class Plugin:
 				self.twitter_channels[screen_name.lower()] = self.tweet_channels
 				if self.config.get(config_key + '.channels'):
 					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_key+'.channels'))
-
-				self.status_replies[screen_name.lower()] = False
-				if self.config.get(config_key + '.status_replies'):
-					self.status_replies[screen_name.lower()] = self.config.get(config_key + '.status_replies', False)
 
 		threading.Thread(target=self.receive_stream).start()
 
@@ -135,7 +130,7 @@ class Plugin:
 			self.bot.log.debug(str(data))
 			self.handle_tweet(data)
 		else:
-			self.send_status('Twitter sent Unknown Data')
+			self.send_status('Twitter sent unknown data')
 			self.bot.log.info(str(data))
 
 	def handle_tweet(self, tweet):

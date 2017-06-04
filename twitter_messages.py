@@ -92,16 +92,17 @@ class Plugin:
 					data_count = data_count + 1
 					if self.debug_datacount and data_count % self.debug_datacount == 0:
 						self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter connection received %d packages' % data_count)
-				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection lost')
+				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter disconnected')
 			except Exception as e:
+				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection lost')
 				exception_count = exception_count + 1
-				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter EXCEPTION %d' % exception_count)
+				self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter EXCEPTION %d' % exception_count)
 				self.bot.log.exception(e)
 				time.sleep(10 * exception_count)
 			finally:
 				loop_count = loop_count + 1
 				time.sleep(20 + loop_count)
-				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection retrying...')
+				self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter connection retrying...')
 		self.twitter_connected = False
 
 	def handle_data(self, data):

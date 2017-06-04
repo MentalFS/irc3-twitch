@@ -61,8 +61,9 @@ class Plugin:
 		self.debug_format = self.config.get('debug_format', '{message}')
 		self.debug_datacount = self.config.get('debug_datacount', 0)
 
-	def connection_made(self):
-		self.bot.log.info('Connected')
+		self.twitter_connected = False
+
+	def connect_twitter(self):
 		for config_key, config_value in self.config.items():
 			if config_value and str(config_value).startswith('@') and not config_key.endswith('_format'):
 				screen_name = config_value[1:]
@@ -83,6 +84,7 @@ class Plugin:
 			try:
 				follow = ','.join(self.twitter_ids.keys())
 				stream = self.twitter_stream.statuses.filter(follow=follow)
+				self.twitter_connected = True
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connected.')
 				self.bot.log.info('IDs: %s' % follow)
 				for tweet in stream:
@@ -100,18 +102,19 @@ class Plugin:
 				loop_count = loop_count + 1
 				time.sleep(20 + loop_count)
 				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection retrying...')
+		self.twitter_connected = False
 
 	def handle_data(self, data):
 		if data is None:
 			 self.bot.log.info('Twitter sent no data')
 		elif data is Timeout:
-			self.send_status('Twitter sent a timeout')
+			self.send_debug('Twitter sent a timeout')
 			self.bot.log.debug(str(data))
 		elif data is Hangup:
-			self.send_status('Twitter sent a hangup')
+			self.send_debug('Twitter sent a hangup')
 			self.bot.log.debug(str(data))
 		elif data is HeartbeatTimeout:
-			self.send_status('Twitter sent a heartbeat timeout')
+			self.send_debug('Twitter sent a heartbeat timeout')
 			self.bot.log.debug(str(data))
 		elif 'retweeted_status' in data:
 			self.bot.log.debug('Twitter sent retweet %s' % data['id_str'])
@@ -123,14 +126,14 @@ class Plugin:
 			self.send_debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']) )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
-			self.send_status('Twitter sent LIMIT NOTICE')
+			self.send_debug('Twitter sent LIMIT NOTICE')
 			self.bot.log.critical(str(data))
 		elif 'text' in data:
 			self.bot.log.debug('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
 			self.bot.log.debug(str(data))
 			self.handle_tweet(data)
 		else:
-			self.send_status('Twitter sent unknown data')
+			self.send_debug('Twitter sent unknown data')
 			self.bot.log.info(str(data))
 
 	def handle_tweet(self, tweet):
@@ -171,3 +174,7 @@ class Plugin:
 		if self.debug_channels:
 			for debug_channel in self.debug_channels:
 				self.bot.privmsg(debug_channel, self.debug_format.format(message=status))
+
+	def connection_made(self):
+		if not self.twitter_connected:
+			self.connect_twitter()

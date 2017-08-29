@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import irc3, asyncio
 import threading, html, time, traceback
+import requests, json
 from irc3.utils import as_list
 from twitter.stream import Timeout, HeartbeatTimeout, Hangup
 
@@ -47,6 +48,7 @@ class Plugin:
 		self.bot = bot
 		self.twitter_channels = {}
 		self.twitter_ids = {}
+		self.twitter_webhooks = {}
 		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
 		self.config = self.bot.config.get(__name__, {})
@@ -55,6 +57,7 @@ class Plugin:
 		self.auto_part_time = self.config.get('auto_part_time', 180)
 		self.tweet_channels = as_list(self.config.get('tweet_channels'))
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
+		self.webhook_format = self.config.get('webhook_format', '{{"content": "{url}"}}')
 		self.status_channels = as_list(self.config.get('status_channels'))
 		self.status_format = self.config.get('status_format', '{message}')
 		self.debug_channels = as_list(self.config.get('debug_channels'))
@@ -73,6 +76,7 @@ class Plugin:
 				self.twitter_channels[screen_name.lower()] = self.tweet_channels
 				if self.config.get(config_key + '.channels'):
 					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_key+'.channels'))
+				self.twitter_webhooks[screen_name.lower()] = self.config.get(config_key+'.webhook')
 
 		threading.Thread(target=self.receive_stream).start()
 
@@ -124,7 +128,7 @@ class Plugin:
 			delete_user = data['delete']['status']['user_id_str']
 			if delete_user in self.twitter_ids:
 				delete_user = '@%s' % self.twitter_ids[delete_user]
-			self.send_debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']) )
+			#self.send_debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']) )
 			self.bot.log.debug(str(data))
 		elif 'limit' in data:
 			self.send_debug('Twitter sent LIMIT NOTICE')
@@ -159,9 +163,11 @@ class Plugin:
 						and not tweet_channel in self.status_channels \
 						and not tweet_channel in self.debug_channels:
 							self.bot.loop.call_later(self.auto_part_time, self.bot.part, tweet_channel)
+				if self.twitter_webhooks[user]:
+					self.send_webhook(self.twitter_webhooks[user], screen_name, text, url)
 				self.send_debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
-			if user in self.twitter_channels and not user_tweet:
-				self.send_debug('Ignored reply %s' % url)
+#			if user in self.twitter_channels and not user_tweet:
+#				self.send_debug('Ignored reply %s' % url)
 
 
 	def send_status(self, status):
@@ -175,6 +181,21 @@ class Plugin:
 		if self.debug_channels:
 			for debug_channel in self.debug_channels:
 				self.bot.privmsg(debug_channel, self.debug_format.format(message=status))
+
+	def send_webhook(self, webhook, screen_name, text, url):
+		try:
+			self.bot.log.info(webhook)
+			screen_name_json = json.dumps(screen_name)[1:-1]
+			text_json = json.dumps(text)[1:-1]
+			url_json = json.dumps(url)[1:-1]
+			json_message = self.webhook_format.format(screen_name=screen_name_json, text=text_json, url=url_json)
+			reply = requests.post(webhook, json=json.loads(json_message))
+			if reply.status_code != 204:
+				self.bot.log.info(webhook)
+				self.bot.log.info(json_message)
+				self.bot.log.info(reply)
+		except Exception as e:
+			self.bot.log.exception(e)
 
 	def connection_made(self):
 		if not self.twitter_connected:

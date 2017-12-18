@@ -147,6 +147,9 @@ class Plugin:
 			text = html.unescape(tweet['text'])
 			if 'extended_tweet' in tweet and 'full_text' in tweet['extended_tweet']:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
+			while text.startswith('.') or text.startswith('/'):
+				text = text[1:]
+			text = text.replace('\r', '').replace('\n', ' ')
 			user = tweet['user']['screen_name'].lower()
 
 			user_tweet = user in self.twitter_channels \

@@ -53,9 +53,13 @@ class file_handler:
 		with codecs.open(filename, 'a+', self.encoding) as fd:
 			fd.write(self.formatter.format(**event) + '\r\n')
 
-@cron('* * * * *') # Pull stats every minute
-def schedule_twitchstats(bot):
-	bot.on_schedule()
+@cron('0 * * * *')
+def schedule_twitchstats_full(bot):
+	bot.on_schedule(True)
+
+@cron('1-59 * * * *')
+def schedule_twitchstats_partial(bot):
+	bot.on_schedule(False)
 
 
 @irc3.plugin
@@ -85,7 +89,7 @@ class TwitchStats:
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
 		self.handler(kw)
 
-	def poll(self, *chunk):
+	def poll(self, full, *chunk):
 		channelnames = {}
 		helix_users = requests.get('https://api.twitch.tv/helix/users', params={'login': chunk}, headers=self.headers)
 		self.bot.log.debug(helix_users.url)
@@ -95,7 +99,8 @@ class TwitchStats:
 			for helix_user in helix_users.json()['data']:
 				channelnames[helix_user['id']] = helix_user['login']
 				channelname = helix_user['login']
-				self.process(channelname=channelname, endpoint='user', api='helix', json=json.dumps(helix_user))
+				if full:
+					self.process(channelname=channelname, endpoint='user', api='helix', json=json.dumps(helix_user))
 
 		helix_streams = requests.get('https://api.twitch.tv/helix/streams', params={'user_login': chunk, 'first': 100}, headers=self.headers)
 		self.bot.log.debug(helix_streams.url)
@@ -118,7 +123,8 @@ class TwitchStats:
 			for kraken_user in kraken_users.json()['users']:
 				user_ids.append(kraken_user['_id'])
 				channelname = kraken_user['name']
-				self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
+				if full:
+					self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
 
 		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(user_ids), 'limit': 100}, headers=self.headers)
 		self.bot.log.debug(kraken_streams.url)
@@ -131,7 +137,7 @@ class TwitchStats:
 
 
 	@irc3.extend
-	def on_schedule(self):
+	def on_schedule(self, full):
 		channels = list(self.channels)
 
 		channel_count = len(channels)
@@ -141,7 +147,7 @@ class TwitchStats:
 
 		chunks = [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
 		for chunk in chunks:
-			multiprocessing.Process(target=self.poll, args=(chunk)).start()
+			multiprocessing.Process(target=self.poll, args=(full, chunk)).start()
 
 	# Keep set of channels
 	@irc3.event('(@\S+ )?JOIN #(?P<channelname>\S+)( :.*)?', iotype='out')

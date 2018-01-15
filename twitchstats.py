@@ -48,17 +48,18 @@ class file_handler:
 		manager = multiprocessing.Manager()
 		self.last_json = manager.dict()
 		self.last_date = manager.dict()
+		self.last_file = manager.dict()
 
 	def __call__(self, event):
-		key = event['channel']+'|'+event['endpoint']+'|'+event['api']
-		duplicate = key in self.last_json and self.last_json[key] == event['json']
 
 		filename = self.filename.format(**event)
 		if not os.path.isfile(filename):
 			dirname = os.path.dirname(filename)
 			if not os.path.isdir(dirname):  # pragma: no cover
 				os.makedirs(dirname)
-			duplicate = False
+
+		key = event['channel']+'|'+event['endpoint']+'|'+event['api']
+		duplicate = key in self.last_json and self.last_file[key] == filename and self.last_json[key] == event['json']
 
 		with codecs.open(filename, 'a+', self.encoding) as fd:
 			if duplicate:
@@ -66,6 +67,7 @@ class file_handler:
 			else:
 				self.last_json[key] = event['json']
 				self.last_date[key] = event['date']
+				self.last_file[key] = filename
 				fd.write(self.formatter.format(**event) + '\r\n')
 
 @cron('0,10,20,30,40,50 * * * *')

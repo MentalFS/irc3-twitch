@@ -17,19 +17,11 @@ You must configure `irc3.plugins.social` properly.
 Additionally, your config has to contain something like this:
 
 [twitter_messages]
-## Optional: Automatically join & leave channels
-auto_join_and_part = true
-auto_part_time = 180
-
 ## Optional: default channel
 tweet_channels = #channel
 
 ## Optional: customize message in channel
 tweet_format = "@{screen_name}: {text}"
-
-## Optional: status output
-status_channels = #status_channel
-status_format = {message}
 
 ## some twitter feeds:
 identifier = @screen_name
@@ -53,16 +45,9 @@ class Plugin:
 		self.twitter_api = self.bot.get_social_connection(id='twitter')
 		self.config = self.bot.config.get(__name__, {})
 
-		self.auto_join_and_part = self.config.get('auto_join_and_part', False)
-		self.auto_part_time = self.config.get('auto_part_time', 180)
 		self.tweet_channels = as_list(self.config.get('tweet_channels'))
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.webhook_format = self.config.get('webhook_format', '{{"content": "{url}"}}')
-		self.status_channels = as_list(self.config.get('status_channels'))
-		self.status_format = self.config.get('status_format', '{message}')
-		self.debug_channels = as_list(self.config.get('debug_channels'))
-		self.debug_format = self.config.get('debug_format', '{message}')
-		self.debug_datacount = self.config.get('debug_datacount', 0)
 
 		self.twitter_connected = False
 
@@ -84,61 +69,51 @@ class Plugin:
 		exception_count = 0
 		loop_count = 0
 		while True:
-			data_count = 0
 			try:
 				follow = ','.join(self.twitter_ids.keys())
 				stream = self.twitter_stream.statuses.filter(follow=follow)
 				self.twitter_connected = True
-				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connected.')
+				self.bot.log.info('Twitter connected')
 				self.bot.log.info('IDs: %s' % follow)
 				for tweet in stream:
 					self.bot.loop.run_in_executor(None, self.handle_data, tweet)
-					data_count = data_count + 1
-					if self.debug_datacount and data_count % self.debug_datacount == 0:
-						self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter connection received %d packages' % data_count)
-				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter disconnected')
+				self.bot.log.info('Twitter disconnected')
 			except Exception as e:
-				self.bot.loop.run_in_executor(None, self.send_status, 'Twitter connection lost')
+				self.bot.log.info('Twitter connection lost')
 				exception_count = exception_count + 1
-				self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter EXCEPTION %d' % exception_count)
+				self.bot.log.info('Twitter EXCEPTION %d' % exception_count)
 				self.bot.log.exception(e)
 				time.sleep(10 * exception_count)
 			finally:
 				loop_count = loop_count + 1
 				time.sleep(20 + loop_count)
-				self.bot.loop.run_in_executor(None, self.send_debug, 'Twitter connection retrying...')
+				self.bot.log.info('Twitter connection retrying')
 		self.twitter_connected = False
 
 	def handle_data(self, data):
 		if data is None:
 			 self.bot.log.info('Twitter sent no data')
 		elif data is Timeout:
-			self.send_debug('Twitter sent a timeout')
-			self.bot.log.debug(str(data))
+			self.bot.log.info('Twitter sent a timeout')
 		elif data is Hangup:
-			self.send_debug('Twitter sent a hangup')
-			self.bot.log.debug(str(data))
+			self.bot.log.info('Twitter sent a hangup')
 		elif data is HeartbeatTimeout:
-			self.send_debug('Twitter sent a heartbeat timeout')
-			self.bot.log.debug(str(data))
+			self.bot.log.info('Twitter sent a heartbeat timeout')
 		elif 'retweeted_status' in data:
 			self.bot.log.debug('Twitter sent retweet %s' % data['id_str'])
-			self.bot.log.debug(str(data))
 		elif 'delete' in data:
 			delete_user = data['delete']['status']['user_id_str']
 			if delete_user in self.twitter_ids:
 				delete_user = '@%s' % self.twitter_ids[delete_user]
-			#self.send_debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']) )
-			self.bot.log.debug(str(data))
+			self.bot.log.debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']))
 		elif 'limit' in data:
-			self.send_debug('Twitter sent LIMIT NOTICE')
-			self.bot.log.critical(str(data))
+			self.bot.log.critical('Twitter sent LIMIT NOTICE')
+			self.bot.log.info(str(data))
 		elif 'text' in data:
 			self.bot.log.debug('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
-			self.bot.log.debug(str(data))
 			self.handle_tweet(data)
 		else:
-			self.send_debug('Twitter sent unknown data')
+			self.bot.log.warn('Twitter sent unknown data')
 			self.bot.log.info(str(data))
 
 	def handle_tweet(self, tweet):
@@ -158,36 +133,18 @@ class Plugin:
 
 			if user_tweet:
 				for tweet_channel in self.twitter_channels[user]:
-					if self.auto_join_and_part:
-						self.bot.join(tweet_channel)
 					self.bot.privmsg(tweet_channel,
 						self.tweet_format.format(screen_name=screen_name, text=text, url=url))
-					if self.auto_join_and_part \
-						and not tweet_channel in self.status_channels \
-						and not tweet_channel in self.debug_channels:
-							self.bot.loop.call_later(self.auto_part_time, self.bot.part, tweet_channel)
 				if self.twitter_webhooks[user]:
 					self.send_webhook(self.twitter_webhooks[user], screen_name, text, url)
-				self.send_debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
-#			if user in self.twitter_channels and not user_tweet:
-#				self.send_debug('Ignored reply %s' % url)
+				self.bot.log.debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
 
-
-	def send_status(self, status):
-		self.bot.log.info(status)
-		if self.status_channels:
-			for status_channel in self.status_channels:
-				self.bot.privmsg(status_channel, self.status_format.format(message=status))
-
-	def send_debug(self, status):
-		self.bot.log.debug(status)
-		if self.debug_channels:
-			for debug_channel in self.debug_channels:
-				self.bot.privmsg(debug_channel, self.debug_format.format(message=status))
+			if user in self.twitter_channels and not user_tweet:
+				self.bot.log.debug('Ignored reply %s' % url)
 
 	def send_webhook(self, webhook, screen_name, text, url):
 		try:
-			self.bot.log.info(webhook)
+			self.bot.log.debug(webhook)
 			screen_name_json = json.dumps(screen_name)[1:-1]
 			text_json = json.dumps(text)[1:-1]
 			url_json = json.dumps(url)[1:-1]

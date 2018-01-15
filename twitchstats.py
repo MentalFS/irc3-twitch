@@ -132,9 +132,13 @@ class TwitchStats:
 
 	@irc3.extend
 	def on_schedule(self):
-		#channels = list(map(lambda c: c[1:], filter(lambda c: c.startswith('#'), self.bot.channels.keys())))
 		channels = list(self.channels)
-		self.bot.log.info('Polling %d channels' % len(channels))
+
+		channel_count = len(channels)
+		if (channel_count != self.channel_count):
+			self.bot.log.info('Polling %d channels' % channel_count)
+			self.channel_count = channel_count
+
 		chunks = [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
 		for chunk in chunks:
 			multiprocessing.Process(target=self.poll, args=(chunk)).start()
@@ -143,12 +147,15 @@ class TwitchStats:
 	@irc3.event('(@\S+ )?JOIN #(?P<channelname>\S+)( :.*)?', iotype='out')
 	@irc3.event('(@\S+ )?:\S+ JOIN #(?P<channelname>\S+)( :.*)?', iotype='in')
 	def on_join_channel(self, channelname):
+		if (channelname in self.channels): return
+		self.bot.log.debug('JOIN: #%s' % channelname)
 		self.channels.add(channelname)
 
 	@irc3.event('(@\S+ )?PART #(?P<channelname>\S+)( :.*)?', iotype='out')
 	def on_part_channel(self, channelname):
-		self.bot.log.info('PART: #%s' % channelname)
+		self.bot.log.debug('PART: #%s' % channelname)
 		self.channels.remove(channelname)
 
 	def connection_lost(self):
 		self.channels = set()
+		self.channel_count = -1

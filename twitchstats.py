@@ -38,26 +38,41 @@ class file_handler:
 		config = {
 			'filename': '~/.irc3/logs/{host}/{channel}-{date:%Y-%m-%d}.{endpoint}.log',
 			'formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} {json}',
+			'duplicate_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} @{reference:%Y-%m-%dT%H:%M:%S.%f%z}'
 		}
 		config.update(bot.config.get(__name__, {}))
 		self.filename = config['filename']
 		self.encoding = bot.encoding
 		self.formatter = config['formatter']
+		self.duplicate_formatter = config['duplicate_formatter']
+		manager = multiprocessing.Manager()
+		self.last_json = manager.dict()
+		self.last_date = manager.dict()
 
 	def __call__(self, event):
+		key = event['channel']+'|'+event['endpoint']+'|'+event['api']
+		duplicate = key in self.last_json and self.last_json[key] == event['json']
+
 		filename = self.filename.format(**event)
 		if not os.path.isfile(filename):
 			dirname = os.path.dirname(filename)
 			if not os.path.isdir(dirname):  # pragma: no cover
 				os.makedirs(dirname)
-		with codecs.open(filename, 'a+', self.encoding) as fd:
-			fd.write(self.formatter.format(**event) + '\r\n')
+			duplicate = False
 
-@cron('0 * * * *')
+		with codecs.open(filename, 'a+', self.encoding) as fd:
+			if duplicate:
+				fd.write(self.duplicate_formatter.format(reference=self.last_date[key], **event) + '\r\n')
+			else:
+				self.last_json[key] = event['json']
+				self.last_date[key] = event['date']
+				fd.write(self.formatter.format(**event) + '\r\n')
+
+@cron('0,10,20,30,40,50 * * * *')
 def schedule_twitchstats_full(bot):
 	bot.on_schedule(True)
 
-@cron('1-59 * * * *')
+@cron('1-9,11-19,21-29,31-39,41-49,51-59 * * * *')
 def schedule_twitchstats_partial(bot):
 	bot.on_schedule(False)
 
@@ -89,7 +104,7 @@ class TwitchStats:
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
 		self.handler(kw)
 
-	def poll(self, full, *chunk):
+	def poll(self, full, chunk):
 		channelnames = {}
 		helix_users = requests.get('https://api.twitch.tv/helix/users', params={'login': chunk}, headers=self.headers)
 		self.bot.log.debug(helix_users.url)

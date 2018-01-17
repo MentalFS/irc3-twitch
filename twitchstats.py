@@ -91,7 +91,7 @@ class TwitchStats:
 		self.bot.log.debug('Handler: %s', hdl.__name__)
 		self.handler = hdl(bot)
 		config = {
-			'chunk-size': 20,
+			'chunk-size': 50,
 			'client-id': 'deh0rnosabytmgde2jtn13k8mo899ye',
 		}
 		config.update(bot.config.get(__name__, {}))
@@ -100,7 +100,7 @@ class TwitchStats:
 			'Client-ID': config['client-id'],
 			'Accept': 'application/vnd.twitchtv.v5+json',
 		}
-		self.connection_lost()
+		self.connection_made()
 
 	def process(self, **kwargs):
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
@@ -140,8 +140,6 @@ class TwitchStats:
 			for kraken_user in kraken_users.json()['users']:
 				user_ids.append(kraken_user['_id'])
 				channelname = kraken_user['name']
-				if full:
-					self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
 
 		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(user_ids), 'limit': 100}, headers=self.headers)
 		self.bot.log.debug(kraken_streams.url)
@@ -179,6 +177,6 @@ class TwitchStats:
 		self.bot.log.debug('PART: #%s' % channelname)
 		self.channels.remove(channelname)
 
-	def connection_lost(self):
+	def connection_made(self):
 		self.channels = set()
 		self.channel_count = -1

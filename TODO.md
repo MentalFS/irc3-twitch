@@ -1,54 +1,49 @@
 # twitchstats.py
-- cache channel names and IDs from tags, only poll `user` endpoint when scheduled
+- cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled
+- use threading instead of multiprocessing
+- properly split APIs/endpoint into own methods/classes
 - stop polling useless old API endpoint `kraken`/`user`
 - omit overly expressive and unneeded fields (mainly URLs) before writing
 - insert game name in `helix`/`stream`
-- insert user login into `helix`/`stream`
-- log community data (or at least insert names)
-- configuration of file names and formats per endpoint
-- configuration of polling times per endpoint
-- see if the new API supports bulk retrieval of follower numbers
+- insert user login and display name into `helix`/`stream`
+- log community data (or at least insert names/display names)
+- log stream metadata if applicable
 - prepare for termination of `kraken` API in the end of 2018
-- consider logging stream metadata
-- consider using threading instead of multiprocessing
+- see if the new API supports bulk retrieval of follower numbers
 
 # twitter_messages.py
+- remove dependency to `social`
+- make configuration more unambigous, like `<prefix>.account` instead of relying on the `@`
+- optionally filter tweets by keywords (for chat and webhook separately)
+- make it possible to send tweets to a webhook only
 - reload capability
-- better webhook handling: multiple formats, pre-defined formats, multiple webhooks per twitter
-- send webhooks in background thread
-- rebuild for more flexibility
-- consider adopting dispatcher and hook system from feeds
-- consider using the storage module
-- consider removing dependency to social module
-- consider different library for twitter
+- adopt dispatcher system from feeds
+- enable formats for messages and webhooks per Twitter account
+- send webhooks in background thread and enable multiple webhooks per Twitter account
+- enable channel/webhook specific formats and filters
 
 # twitch_capabilities.py
 - support `RECONNECT` message
 - option to ignore `RECONNECT`
+- a dispatcher that automatically joins the channel prior to sending
+- try to make private commands work, and the ones using `NOTICE`
 
 # rawlogger.py
 - catch messages like replies to `NAMES`
 - log raw non-channel messages to files with a configurable name
 - log private messages separately to files with a configurable name
+- add a hook system so twitch could log whispers in separate files
 
 # new plugins
-- notifications/highlights in `irc3.log`
-- periodically log channel user data: user count, maybe list, numbers per prefix (or just issue `NAMES` and let logger take care)
-- automatically join channels a message is sent to by the bot (or make a dispatcher that does that)
-- leave channel after a period of idling (except autojoin channels)
-- probably externalize the channel list to a new module
-- external notifications/highlights with webhooks
+- leave channel after a period of idle time (sending or receiving), except autojoin channels
+- notifications/highlights in `irc3.log` or external/webhooks
+- periodically log channel user data: user count, maybe list, numbers per prefix (maybe `NAMES` will do)
 
 # general
-- *LICENCE*
-- *README*
-- *find better names for some files - and the project*
-- rename to `irc3_plugins`, subfolder for plugins: `plugins`
-- put Twitch stuff into own package, rename `twitter_messages` to `tweets`, rename `twitch_stats` `twitch/apilogger`
-- check config stuff (only base name)
-- *make folders for plugins, bin, inis*
-- consider adding scripts for searching logs
+- *add `LICENCE` and `README`*
+- *rename to `irc3_plugins`, subfolder for plugins: `plugins`*
+- *put Twitch plugins into own package, rename `twitter_messages` to `tweets`, rename `twitch_stats` `twitch/apilogger`*
+- add scripts for startup, shutdown and restart
+- better documentation/examples
 - restructure project to document dependencies and look more Python-esque
-- better documentation / examples
 - some kind of testing might be nice
-- see if Twitch is moving further away from IRC and maybe ditch it too

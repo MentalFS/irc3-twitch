@@ -2,12 +2,9 @@
 - *cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled*
 - *use threading instead of multiprocessing*
 - *properly split APIs/endpoint into own methods/classes*
-- *stop polling useless old API endpoint `kraken`/`user`*
-- *omit overly expressive and unneeded fields (mainly URLs) before writing*
-- insert user login into `helix`/`stream`
-- insert or log game name/data in `helix`/`stream`
-- insert or log community names/display names in `kraken`/`stream` (at least strip html fields)
-- insert or log `helix/streams/metadata` in `helix`/`stream` if not empty
+- log game name/data with `helix`/`stream`
+- log community names/display names with `kraken`/`stream` (at least strip html fields)
+- log `helix/streams/metadata` with `helix`/`stream` if not empty
 - prepare for termination of `kraken` API in the end of 2018
 - see if the helix API supports bulk retrieval of follower numbers and communities
 

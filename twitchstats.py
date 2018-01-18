@@ -71,12 +71,12 @@ class file_handler:
 				fd.write(self.formatter.format(**event) + '\r\n')
 
 @cron('0,10,20,30,40,50 * * * *')
-def schedule_twitchstats_full(bot):
-	bot.on_schedule(True)
+def schedule_full_poll(bot):
+	bot.poll_data(True)
 
 @cron('1-9,11-19,21-29,31-39,41-49,51-59 * * * *')
-def schedule_twitchstats_partial(bot):
-	bot.on_schedule(False)
+def schedule_partial_poll(bot):
+	bot.poll_data(False)
 
 
 @irc3.plugin
@@ -106,7 +106,7 @@ class TwitchStats:
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
 		self.handler(kw)
 
-	def poll(self, full, chunk):
+	def poll_chunk(self, full, chunk):
 		channelnames = {}
 		helix_users = requests.get('https://api.twitch.tv/helix/users', params={'login': chunk}, headers=self.headers)
 		self.bot.log.debug(helix_users.url)
@@ -117,6 +117,8 @@ class TwitchStats:
 				channelnames[helix_user['id']] = helix_user['login']
 				channelname = helix_user['login']
 				if full:
+					if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
+					if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
 					self.process(channelname=channelname, endpoint='user', api='helix', json=json.dumps(helix_user))
 
 		helix_streams = requests.get('https://api.twitch.tv/helix/streams', params={'user_login': chunk, 'first': 100}, headers=self.headers)
@@ -126,6 +128,7 @@ class TwitchStats:
 		else:
 			for helix_stream in helix_streams.json()['data']:
 				channelname = channelnames[helix_stream['user_id']]
+				if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
 				if not channelname:
 					self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
 				else:
@@ -140,6 +143,8 @@ class TwitchStats:
 			for kraken_user in kraken_users.json()['users']:
 				user_ids.append(kraken_user['_id'])
 				channelname = kraken_user['name']
+				if 'logo' in kraken_user: del kraken_user['logo']
+				self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
 
 		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(user_ids), 'limit': 100}, headers=self.headers)
 		self.bot.log.debug(kraken_streams.url)
@@ -148,11 +153,20 @@ class TwitchStats:
 		else:
 			for kraken_stream in kraken_streams.json()['streams']:
 				channelname = kraken_stream['channel']['name']
+				if 'channel' in kraken_stream:
+					if 'logo' in kraken_stream['channel']: del kraken_stream['channel']['logo']
+					if 'description' in kraken_stream['channel']: del kraken_stream['channel']['description']
+					if 'profile_banner' in kraken_stream['channel']: del kraken_stream['channel']['profile_banner']
+					if 'profile_banner_background_color' in kraken_stream['channel']:
+						del kraken_stream['channel']['profile_banner_background_color']
+					if 'url' in kraken_stream['channel']: del kraken_stream['channel']['url']
+					if 'video_banner' in kraken_stream['channel']: del kraken_stream['channel']['video_banner']
+				if 'preview' in kraken_stream: del kraken_stream['preview']
 				self.process(channelname=channelname, endpoint='stream', api='kraken', json=json.dumps(kraken_stream))
 
 
 	@irc3.extend
-	def on_schedule(self, full):
+	def poll_data(self, full):
 		channels = list(self.channels)
 
 		channel_count = len(channels)
@@ -162,7 +176,7 @@ class TwitchStats:
 
 		chunks = [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
 		for chunk in chunks:
-			multiprocessing.Process(target=self.poll, args=(full, chunk)).start()
+			multiprocessing.Process(target=self.poll_chunk, args=(full, chunk)).start()
 
 	# Keep set of channels
 	@irc3.event('(@\S+ )?JOIN #(?P<channelname>\S+)( :.*)?', iotype='out')

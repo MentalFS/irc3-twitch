@@ -143,8 +143,10 @@ class TwitchStats:
 			for kraken_user in kraken_users.json()['users']:
 				user_ids.append(kraken_user['_id'])
 				channelname = kraken_user['name']
-				if 'logo' in kraken_user: del kraken_user['logo']
-				self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
+				if full:
+					if 'logo' in kraken_user: del kraken_user['logo']
+					if 'updated_at' in kraken_user: del kraken_user['updated_at']
+					self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
 
 		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(user_ids), 'limit': 100}, headers=self.headers)
 		self.bot.log.debug(kraken_streams.url)
@@ -160,6 +162,7 @@ class TwitchStats:
 					if 'profile_banner_background_color' in kraken_stream['channel']:
 						del kraken_stream['channel']['profile_banner_background_color']
 					if 'url' in kraken_stream['channel']: del kraken_stream['channel']['url']
+					if 'updated_at' in kraken_stream['channel']: del kraken_stream['channel']['updated_at']
 					if 'video_banner' in kraken_stream['channel']: del kraken_stream['channel']['video_banner']
 				if 'preview' in kraken_stream: del kraken_stream['preview']
 				self.process(channelname=channelname, endpoint='stream', api='kraken', json=json.dumps(kraken_stream))

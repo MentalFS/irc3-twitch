@@ -1,4 +1,4 @@
-# twitchstats.py
+# twitchlogger.py
 - *cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled*
 - *use threading instead of multiprocessing*
 - better exception handling - some runtime exceptions get to `STDOUT`
@@ -9,7 +9,7 @@
 - prepare for termination of `kraken` API in the end of 2018
 - see if the helix API supports bulk retrieval of follower numbers and communities
 
-# twitter_messages.py
+# tweets.py
 - *make configuration more unambigous, like `<prefix>.account` instead of relying on the `@`*
 - *make webhooks Discord-specific and format them better*
 - *use more generic formatting for IRC and apply sanity checks after*
@@ -22,10 +22,12 @@
 - enable channel formats per Twitter account configuration
 - enable multiple Twitter accounts per configuration set
 
-# twitch_capabilities.py
+# twitch.py
 - support `RECONNECT` message
-- move room list from `twitchstats.py` here and make it accessible including IDs
 - translate private messages and notices to whispers or messages  <!-- hint: connection=IrcConnection -->
+- add a file handler that log whispers in separate files
+- add a dispatcher that joins the channel
+- move room list from `twitchlogger.py` here and make it accessible including IDs
 - option to not use membership capability (to avoid problems with large rooms)
 - option to ignore `RECONNECT`
 - optionally connect through websocket <!-- hint: connection=IrcConnection -->
@@ -34,14 +36,13 @@
 - catch messages like replies to `NAMES`
 - optionally log raw non-channel messages to files with a configurable name
 - log private messages separately to files
-- add a hook system so Twitch could log whispers in separate files
 
 # plugin ideas
 - leave channel after a period of idle time (sending or receiving), except autojoin channels
-- automatically join a channel when sending a message, or a dispatcher that joins the channel
+- automatically join hosted channels
 - notifications/highlights in `irc3.log` or external/webhooks
 - periodically log channel user data/count (maybe `NAMES` will do)
-- splitting Twitch data retrieval from `twitchstats.py` to a separate base module for use in other plugins
+- splitting Twitch data retrieval from `twitchlogger.py` to a separate base module for use in other plugins
 - typical Twitch bot functionality as plugins (custom commands, moderation, loyalty, ...)
 - Twitch proxy that sends every raw line to an IRC client and back (probably not going to work that way...)
 

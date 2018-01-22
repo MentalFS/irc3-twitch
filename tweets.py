@@ -7,7 +7,7 @@ from twitter.stream import Timeout, HeartbeatTimeout, Hangup
 
 __doc__ = '''
 ==========================================
-:mod:`twitter_messages` Feeds plugin
+:mod:`tweets` Feeds plugin
 ==========================================
 
 Post Twitter Updates into channels.
@@ -16,7 +16,7 @@ You must configure `irc3.plugins.social` properly.
 
 Additionally, your config has to contain something like this:
 
-[twitter_messages]
+[tweets]
 ## Optional: default channel
 tweet_channels = #channel
 
@@ -31,7 +31,7 @@ identifier.channels = #channel1 #channel2
 '''
 
 @irc3.plugin
-class Plugin:
+class Tweets:
 	requires = [
 		'irc3.plugins.social',
 	]

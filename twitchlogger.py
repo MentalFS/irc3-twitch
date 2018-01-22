@@ -6,7 +6,7 @@ from tzlocal import get_localzone
 from datetime import datetime
 __doc__ = '''
 ==============================================
-:mod:`twitchstats.py` Twitch statistics plugin
+:mod:`twitchlogger.py` Twitch statistics plugin
 ==============================================
 
 Log statistics for twitch channels in raw json format
@@ -80,7 +80,7 @@ def schedule_partial_poll(bot):
 
 
 @irc3.plugin
-class TwitchStats:
+class TwitchLogger:
 	"""Logger plugin. Use the :class:~file_handler handler by default
 	"""
 

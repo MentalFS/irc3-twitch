@@ -1,7 +1,8 @@
 # twitchstats.py
 - *cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled*
 - *use threading instead of multiprocessing*
-- *properly split APIs/endpoint into own methods/classes*
+- better exception handling - some runtime exceptions get to `STDOUT`
+- properly split APIs/endpoint into own methods/classes
 - log or insert game data with `helix`/`stream` (strip url field)
 - log community data with `kraken`/`stream` (strip html and url fields) or just insert the names
 - log or insert `helix/streams/metadata` with `helix`/`stream` if not empty (strip empty fields)
@@ -10,13 +11,15 @@
 
 # twitter_messages.py
 - *make configuration more unambigous, like `<prefix>.account` instead of relying on the `@`*
-- make it possible to send tweets to a webhook only
+- *make webhooks Discord-specific and format them better*
+- *use more generic formatting for IRC and apply sanity checks after*
+- make it possible to send tweets to a Discord only
 - optionally filter tweets by keywords (probably also as exclusions)
 - handle the same Twitter account configured multiple times
 - reload capability
 - adopt dispatcher system from feeds
-- send webhooks in background thread and enable multiple webhooks per Twitter account configuration
-- enable formats for messages and webhooks per Twitter account configuration
+- send to Discord in background thread and enable multiple Discord webhooks per Twitter account configuration
+- enable channel formats per Twitter account configuration
 - enable multiple Twitter accounts per configuration set
 
 # twitch_capabilities.py
@@ -43,9 +46,6 @@
 - Twitch proxy that sends every raw line to an IRC client and back (probably not going to work that way...)
 
 # general
-- *add `LICENCE` and `README`*
-- *rename to `irc3_plugins`, subfolder for plugins: `plugins`*
-- *rename `twitter_messages` to `tweets`, `twitch_stats` to `twitchlogger` and `twitch_capabilities` to `twitch`*
 - add scripts for startup, shutdown and restart with multiple configs
 - include a base configuration for Twitch with server, flood protection, ...
 - better documentation/examples

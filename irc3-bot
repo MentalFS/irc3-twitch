@@ -1,0 +1,55 @@
+#!/bin/bash -l
+if [ -z "$*" ] || [ "$1" == "--help" ] ; then
+	echo "Helper script to run or manage an irc3 bot."
+	echo "Usage: $(basename "$0") CONFIGURATION [OPTION]..."
+	echo
+	echo "CONFIGURATION: Name of the configuration file (may omit the .ini)."
+	echo
+	echo "OPTION:        Are forwared to irc3 unless the first option is:"
+	echo "  --logs       Shows the bot's latest logs"
+	echo "  --reload     Reloads the bot"
+	echo "  --kill       Kills the bot"
+	echo "  --test       Starts the bot in test mode - logs to STDOUT"
+	echo
+	echo "This script creates a lock, so multiple execution will be prevented."
+	exit
+fi
+
+set -e
+which irc3 >/dev/null || { echo "Could not find irc3 in path." 1>&2; exit 1; }
+cd "$(dirname "$(readlink -f "$0")")"
+
+CONFIG="${1%.ini}"
+test -n "${CONFIG}" || { echo "No configuration specified." 1>&2; exit 1; }
+test -f "${CONFIG}.ini" || { echo "Configuration not found." 1>&2; exit 1; }
+shift
+
+case "$1" in
+	"--logs")
+		cd logs
+		tail -n "${2:-10}" "${CONFIG}"/*.log \
+		| egrep --color '^|^==> .* <==$'
+		echo
+		;;
+	"--reload")
+		pgrep -f "\\b$(basename "$0") ${CONFIG}(\.ini)? *(--test)? *$" \
+		| while read P; do pkill "^irc3$" -P "$P" -HUP -e; done
+		;;
+	"--kill")
+		pgrep -f "\\b$(basename "$0") ${CONFIG}(\.ini)? *(--test)? *$" \
+		| while read P; do pkill "^irc3$" -P "$P" -e; done
+		;;
+	"--test")
+		shift
+		irc3 --verbose --debug --raw --logdate "$@" "${CONFIG}.ini"
+		;;
+	*)
+		mkdir -p "logs/${CONFIG}"
+		exec 200>"logs/${CONFIG}/out.log"
+		flock -n 200 || exit 2
+
+		tty -s && echo "All output is redirected to ${PWD}/logs/${CONFIG}/."
+		irc3 --logdir "logs/${CONFIG}/" "$@" "${CONFIG}.ini" \
+			&>"logs/${CONFIG}/out.log"
+		;;
+esac

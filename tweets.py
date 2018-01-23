@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
-import irc3, asyncio
+import irc3, asyncio, venusian
 import threading, html, time, traceback
 import requests, json
 from irc3.utils import as_list
 from twitter.stream import Timeout, HeartbeatTimeout, Hangup
+from irc3.plugins.command import command
 
 __doc__ = '''
 ==========================================
@@ -24,8 +25,13 @@ tweet_channels = #channel
 tweet_format = "@{screen_name}: {text}"
 
 ## some twitter feeds:
-identifier = @screen_name
+identifier.account = screen_name
 identifier.channels = #channel1 #channel2
+
+## these are just for Discord
+webhook_username = Username shown as bot name
+webhook_avatar = https://... (URL ro an avatar image)
+identifier.webhook = https://discordapp.com/api/webhooks/...
 [...]
 
 '''
@@ -47,21 +53,23 @@ class Tweets:
 
 		self.tweet_channels = as_list(self.config.get('tweet_channels'))
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
-		self.webhook_format = self.config.get('webhook_format', '{{"content": "{url}"}}')
+		self.webhook_username = self.config.get('webhook_username')
+		self.webhook_avatar = self.config.get('webhook_avatar')
 
 		self.twitter_connected = False
 
 	def connect_twitter(self):
 		for config_key, config_value in self.config.items():
-			if config_value and str(config_value).startswith('@') and not config_key.endswith('_format'):
-				screen_name = config_value[1:]
+			if config_value and str(config_key).endswith('.account'):
+				screen_name = config_value
 				details = self.twitter_api.users.show(screen_name=screen_name)
 				self.twitter_ids[details["id_str"]] = screen_name
 
 				self.twitter_channels[screen_name.lower()] = self.tweet_channels
-				if self.config.get(config_key + '.channels'):
-					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_key+'.channels'))
-				self.twitter_webhooks[screen_name.lower()] = self.config.get(config_key+'.webhook')
+				config_id = config_key[:-8]
+				if self.config.get(config_id + '.channels'):
+					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_id+'.channels'))
+				self.twitter_webhooks[screen_name.lower()] = self.config.get(config_id+'.webhook')
 
 		threading.Thread(target=self.receive_stream).start()
 
@@ -108,55 +116,105 @@ class Tweets:
 			self.bot.log.debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']))
 		elif 'limit' in data:
 			self.bot.log.critical('Twitter sent LIMIT NOTICE')
-			self.bot.log.info(str(data))
+			self.bot.log.info(json.dumps(data))
 		elif 'text' in data:
 			self.bot.log.debug('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
 			self.handle_tweet(data)
+			#self.bot.log.debug(json.dumps(data))
 		else:
 			self.bot.log.warn('Twitter sent unknown data')
-			self.bot.log.info(str(data))
+			self.bot.log.info(json.dumps(data))
 
 	def handle_tweet(self, tweet):
 			screen_name = tweet['user']['screen_name']
+			user_name = tweet['user']['name']
 			url = 'https://twitter.com/%s/status/%s' % (screen_name, tweet['id_str'])
 			text = html.unescape(tweet['text'])
 			if 'extended_tweet' in tweet and 'full_text' in tweet['extended_tweet']:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
-			while text.startswith('.') or text.startswith('/'):
-				text = text[1:]
-			text = text.replace('\r', '').replace('\n', ' ')
 			user = tweet['user']['screen_name'].lower()
 
-			user_tweet = user in self.twitter_channels \
+			user_tweet = (user in self.twitter_channels or user in self.twitter_webhooks)  \
 				and (tweet['in_reply_to_screen_name'] == None or tweet['in_reply_to_screen_name'].lower() == user) \
 				and (not text.startswith('@') or text.lower().startswith('@' + user))
 
 			if user_tweet:
-				for tweet_channel in self.twitter_channels[user]:
-					self.bot.privmsg(tweet_channel,
-						self.tweet_format.format(screen_name=screen_name, text=text, url=url))
+				if user in self.twitter_channels:
+					# text = text.replace('\r', '').replace('\n', ' ')
+					for tweet_channel in self.twitter_channels[user]:
+						self.bot.privmsg(tweet_channel,
+							self.tweet_format.format(
+								screen_name=screen_name, user_name=user_name, text=text, tweet=tweet, url=url))
+					self.bot.log.debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
 				if self.twitter_webhooks[user]:
-					self.send_webhook(self.twitter_webhooks[user], screen_name, text, url)
-				self.bot.log.debug('Sent tweet %s to %s' % (url, ' '.join(self.twitter_channels[user])))
-
-			if user in self.twitter_channels and not user_tweet:
+					self.send_webhook(self.twitter_webhooks[user], screen_name, user_name, text, tweet, url)
+			else:
 				self.bot.log.debug('Ignored reply %s' % url)
 
-	def send_webhook(self, webhook, screen_name, text, url):
+	def send_webhook(self, webhook, screen_name, user_name, text, tweet, url):
 		try:
-			self.bot.log.debug(webhook)
-			screen_name_json = json.dumps(screen_name)[1:-1]
-			text_json = json.dumps(text)[1:-1]
-			url_json = json.dumps(url)[1:-1]
-			json_message = self.webhook_format.format(screen_name=screen_name_json, text=text_json, url=url_json)
-			reply = requests.post(webhook, json=json.loads(json_message))
+			message = {'embeds': []}
+			if self.webhook_username:
+				message['username'] = self.webhook_username
+			if self.webhook_avatar:
+				message['avatar_url'] = self.webhook_avatar
+
+			text_message = {
+				'description': text,
+				'url': url,
+				'title': '@%s' % screen_name,
+				'color': 33972, #alternative: 44269
+				'thumbnail': {
+					'url': tweet['user']['profile_image_url_https']
+				}
+			}
+			message['embeds'].append(text_message)
+
+			if 'extended_entities' in tweet and 'media' in tweet['extended_entities']:
+				for medium in tweet['extended_entities']['media']:
+					media_message = {'url': url }
+					if 'media_url' in medium:
+						media_message['image'] = { 'url': medium['media_url'] }
+					if 'media_url_https' in medium:
+						media_message['image'] = { 'url': medium['media_url_https'] }
+					# Videos are not supported yet, but who knows?
+					if 'video_info' in medium and 'variants' in medium['video_info'] \
+							and len(medium['video_info']['variants']) > 0 \
+							and 'url' in medium['video_info']['variants'][0]:
+						media_message['video'] = {'url': medium['video_info']['variants'][0]['url']}
+					# Until then at least mark the videos
+					if medium['type'] != 'photo':
+						if medium['type'] == 'animated_gif':
+							media_message['footer'] = {'text': '🎞️ GIF'}
+						elif medium['type'] == 'video':
+							media_message['footer'] = {'text': '🎞️ Video'}
+						else:
+							media_message['footer'] = {'text': '🎞️ ?'}
+					message['embeds'].append(media_message)
+
+			reply = requests.post(webhook, json=message)
 			if reply.status_code != 204:
 				self.bot.log.info(webhook)
 				self.bot.log.info(json_message)
 				self.bot.log.info(reply)
+			self.bot.log.debug('Sent tweet %s to %s' % (url, webhook))
+			#self.bot.log.debug(json.dumps(tweet))
+			#self.bot.log.debug(json.dumps(message))
 		except Exception as e:
 			self.bot.log.exception(e)
 
 	def connection_made(self):
 		if not self.twitter_connected:
 			self.connect_twitter()
+
+	@command(permission='admin', venusian_category='irc3.debug')
+	def reload_tweet(self, mask, target, args):
+		"""Handle a specific tweet (again)
+
+            %%reload_tweet <id>
+        """
+		status = args['<id>']
+		self.bot.log.info('Fetching and handling tweet: %s' % status)
+		tweet = self.twitter_api.statuses.show(id=status, include_entities="true", tweet_mode="extended")
+		tweet['text'] = tweet['full_text']
+		self.handle_tweet(tweet)

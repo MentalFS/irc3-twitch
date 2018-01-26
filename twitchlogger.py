@@ -185,14 +185,20 @@ class TwitchLogger:
 	@irc3.event('(@\S+ )?JOIN #(?P<channelname>\S+)( :.*)?', iotype='out')
 	@irc3.event('(@\S+ )?:\S+ JOIN #(?P<channelname>\S+)( :.*)?', iotype='in')
 	def on_join_channel(self, channelname):
-		if (channelname in self.channels): return
+		if channelname in self.channels: return
 		self.bot.log.debug('JOIN: #%s' % channelname)
 		self.channels.add(channelname)
 
 	@irc3.event('(@\S+ )?PART #(?P<channelname>\S+)( :.*)?', iotype='out')
 	def on_part_channel(self, channelname):
+		if not channelname in self.channels: return
 		self.bot.log.debug('PART: #%s' % channelname)
 		self.channels.remove(channelname)
+
+	@irc3.event('(@\S+ )?:(?P<nickname>\S+)!\S+ PART #(?P<channelname>\S+)( :.*)?', iotype='in')
+	def on_part_channel_message(self, channelname, nickname):
+		if nickname != self.bot.nick: return
+		self.on_part_channel(channelname)
 
 	def connection_made(self):
 		self.channels = set()

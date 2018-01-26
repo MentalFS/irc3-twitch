@@ -6,10 +6,10 @@ if [ -z "$*" ] || [ "$1" == "--help" ] ; then
 	echo "CONFIGURATION: Name of the configuration file (may omit the .ini)."
 	echo
 	echo "OPTION:        Are forwared to irc3 unless the first option is:"
-	echo "  --logs       Shows the bot's latest logs"
-	echo "  --reload     Reloads the bot"
+	echo "  --logs       Shows the bot's latest logs (with tail)"
+	echo "  --reload     Reloads the bot (SIGHUP)"
 	echo "  --kill       Kills the bot"
-	echo "  --test       Starts the bot in test mode - logs to STDOUT"
+	echo "  --test       Starts the bot in test mode (DEBUG logs to STDOUT)"
 	echo
 	echo "This script creates a lock, so multiple execution will be prevented."
 	exit
@@ -27,29 +27,33 @@ shift
 case "$1" in
 	"--logs")
 		cd logs
-		tail -n "${2:-10}" "${CONFIG}"/*.log \
+		shift
+		tail "$@" "${CONFIG}"/*.log \
 		| egrep --color '^|^==> .* <==$'
 		echo
 		;;
 	"--reload")
-		pgrep -f "\\b$(basename "$0") ${CONFIG}(\.ini)? *(--test)? *$" \
-		| while read P; do pkill "^irc3$" -P "$P" -HUP -e; done
+		pgrep -f "\\b$(basename "$0") ${CONFIG}(\.ini)?\\b" \
+		| while read P; do pkill -x irc3 -P "$P" -HUP -e || :; done \
+		| sed 's/kill/reload/g'
 		;;
 	"--kill")
-		pgrep -f "\\b$(basename "$0") ${CONFIG}(\.ini)? *(--test)? *$" \
-		| while read P; do pkill "^irc3$" -P "$P" -e; done
+		pgrep -f "\\b$(basename "$0") ${CONFIG}(\.ini)?\\b" \
+		| while read P; do pkill -x irc3 -P "$P" -e || :; done
 		;;
 	"--test")
 		shift
 		irc3 --verbose --debug --raw --logdate "$@" "${CONFIG}.ini"
 		;;
 	*)
+		exec 2>&1
 		mkdir -p "logs/${CONFIG}"
 		exec 200>"logs/${CONFIG}/out.log"
 		flock -n 200 || exit 2
+		find "logs/${CONFIG}/" -name 'messages.*' -print0 | xargs -0r rm -rf
 
-		tty -s && echo "All output is redirected to ${PWD}/logs/${CONFIG}/."
+		exec &>"logs/${CONFIG}/out.log"
+		tty -s && exec &> >(tee "logs/${CONFIG}/out.log")
 		irc3 --logdir "logs/${CONFIG}/" "$@" "${CONFIG}.ini" \
-			&>"logs/${CONFIG}/out.log"
 		;;
 esac

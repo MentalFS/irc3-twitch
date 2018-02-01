@@ -170,36 +170,43 @@ class Tweets:
 			}
 			message['embeds'].append(text_message)
 
-			if 'extended_entities' in tweet and 'media' in tweet['extended_entities']:
-				for medium in tweet['extended_entities']['media']:
-					media_message = {'url': url }
-					if 'media_url' in medium:
-						media_message['image'] = { 'url': medium['media_url'] }
-					if 'media_url_https' in medium:
-						media_message['image'] = { 'url': medium['media_url_https'] }
-					# Videos are not supported yet, but who knows?
-					if 'video_info' in medium and 'variants' in medium['video_info'] \
-							and len(medium['video_info']['variants']) > 0 \
-							and 'url' in medium['video_info']['variants'][0]:
-						media_message['video'] = {'url': medium['video_info']['variants'][0]['url']}
-					# Until then at least mark the videos
-					if medium['type'] != 'photo':
-						if medium['type'] == 'animated_gif':
-							media_message['footer'] = {'text': '🎞️ GIF'}
-						elif medium['type'] == 'video':
-							media_message['footer'] = {'text': '🎞️ Video'}
-						else:
-							media_message['footer'] = {'text': '🎞️ ?'}
-					message['embeds'].append(media_message)
+			# Look for the best place to get media
+			media_base = tweet
+			if 'extended_tweet' in tweet:
+				media_base = tweet['extended_tweet']
+			media = []
+			if 'extended_entities' in media_base and 'media' in media_base['extended_entities']:
+				media = media_base['extended_entities']['media']
+			elif 'entities' in media_base and 'media' in media_base['entities']:
+				media = media_base['entities']['media']
+
+			for medium in media:
+				media_message = {'url': url }
+				if 'media_url' in medium:
+					media_message['image'] = { 'url': medium['media_url'] }
+				if 'media_url_https' in medium:
+					media_message['image'] = { 'url': medium['media_url_https'] }
+				# Videos are not supported yet, but who knows?
+				if 'video_info' in medium and 'variants' in medium['video_info'] \
+						and len(medium['video_info']['variants']) > 0 \
+						and 'url' in medium['video_info']['variants'][0]:
+					media_message['video'] = {'url': medium['video_info']['variants'][0]['url']}
+				# Until then at least mark the videos
+				if medium['type'] != 'photo':
+					if medium['type'] == 'animated_gif':
+						media_message['footer'] = {'text': '🎞️ GIF'}
+					elif medium['type'] == 'video':
+						media_message['footer'] = {'text': '🎞️ Video'}
+					else:
+						media_message['footer'] = {'text': '🎞️ ?'}
+				message['embeds'].append(media_message)
 
 			reply = requests.post(webhook, json=message)
 			if reply.status_code != 204:
 				self.bot.log.info(webhook)
-				self.bot.log.info(json_message)
+				self.bot.log.info(json.dumps(message))
 				self.bot.log.info(reply)
 			self.bot.log.debug('Sent tweet %s to %s' % (url, webhook))
-			#self.bot.log.debug(json.dumps(tweet))
-			#self.bot.log.debug(json.dumps(message))
 		except Exception as e:
 			self.bot.log.exception(e)
 
@@ -215,6 +222,8 @@ class Tweets:
         """
 		status = args['<id>']
 		self.bot.log.info('Fetching and handling tweet: %s' % status)
-		tweet = self.twitter_api.statuses.show(id=status, include_entities="true", tweet_mode="extended")
-		tweet['text'] = tweet['full_text']
+		tweet = self.twitter_api.statuses.show(id=status, include_entities="true", tweet_mode="compability")
+		tweet['extended_tweet'] = self.twitter_api.statuses.show(id=status, include_entities="true", tweet_mode="extended")
+		self.bot.log.debug(json.dumps(tweet))
 		self.handle_tweet(tweet)
+		return 'Loaded and handled tweet: @%s/%s' % (tweet['user']['screen_name'], tweet['id_str'])

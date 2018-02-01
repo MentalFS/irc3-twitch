@@ -1,7 +1,6 @@
 # twitchlogger.py
 - *cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled*
-- *use threading instead of multiprocessing*
-- better exception handling - some runtime exceptions get to `STDOUT`
+- *use ThreadPoolExecutor instead of multiprocessing*
 - log or insert game data with `helix`/`stream` (strip url field)
 - log community data with `kraken`/`stream` (strip html and url fields) or just insert the names
 - log or insert `helix/streams/metadata` with `helix`/`stream` if not empty (strip empty fields)
@@ -10,13 +9,12 @@
 
 # tweets.py
 - clean up the non-OO mess (it grew with time, honestly)
-- optionally filter tweets by keywords (probably also as exclusions)
-- extend URLs at least for Discord (not sure if TOS allows complete removal of URL tracker)
 - reload capability
-- adopt dispatcher system from feeds
+- optionally filter tweets by keywords (probably also as exclusions)
+- account-specific formats
+- extend URLs, check markdown syntax for Discord
 - handle the same Twitter account configured multiple times
-- send to Discord in background thread and enable multiple Discord webhooks per Twitter account configuration
-- enable channel formats per Twitter account configuration and multiple Twitter accounts per configuration set
+- adopt dispatcher system from feeds
 
 # twitch.py
 - support `RECONNECT` message

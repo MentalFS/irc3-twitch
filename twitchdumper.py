@@ -70,11 +70,11 @@ class file_handler:
 				self.last_file[key] = filename
 				fd.write(self.formatter.format(**event) + '\r\n')
 
-@cron('0,10,20,30,40,50 * * * *')
+@cron('0 * * * *')
 def schedule_full_poll(bot):
 	bot.poll_data(True)
 
-@cron('1-9,11-19,21-29,31-39,41-49,51-59 * * * *')
+@cron('1-59 * * * *')
 def schedule_partial_poll(bot):
 	bot.poll_data(False)
 
@@ -119,6 +119,7 @@ class TwitchLogger:
 				if full:
 					if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
 					if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
+					if 'view_count' in helix_user: del helix_user['view_count']
 					self.process(channelname=channelname, endpoint='user', api='helix', json=json.dumps(helix_user))
 
 		helix_streams = requests.get('https://api.twitch.tv/helix/streams', params={'user_login': chunk, 'first': 100}, headers=self.headers)
@@ -156,14 +157,18 @@ class TwitchLogger:
 			for kraken_stream in kraken_streams.json()['streams']:
 				channelname = kraken_stream['channel']['name']
 				if 'channel' in kraken_stream:
+					if 'created_at' in kraken_stream['channel']: del kraken_stream['channel']['created_at']
 					if 'logo' in kraken_stream['channel']: del kraken_stream['channel']['logo']
 					if 'description' in kraken_stream['channel']: del kraken_stream['channel']['description']
+					if 'partner' in kraken_stream['channel']: del kraken_stream['channel']['partner']
 					if 'profile_banner' in kraken_stream['channel']: del kraken_stream['channel']['profile_banner']
 					if 'profile_banner_background_color' in kraken_stream['channel']:
 						del kraken_stream['channel']['profile_banner_background_color']
 					if 'url' in kraken_stream['channel']: del kraken_stream['channel']['url']
 					if 'updated_at' in kraken_stream['channel']: del kraken_stream['channel']['updated_at']
 					if 'video_banner' in kraken_stream['channel']: del kraken_stream['channel']['video_banner']
+					if 'views' in kraken_stream['channel']: del kraken_stream['channel']['views']
+				if 'community_id' in kraken_stream: del kraken_stream['community_id']
 				if 'preview' in kraken_stream: del kraken_stream['preview']
 				self.process(channelname=channelname, endpoint='stream', api='kraken', json=json.dumps(kraken_stream))
 

@@ -48,7 +48,7 @@ case "$1" in
 	*)
 		exec 2>&1
 		mkdir -p "logs/${CONFIG}"
-		exec 200>"logs/${CONFIG}/out.log"
+		exec 200>"logs/${CONFIG}/$(basename "$0").lock"
 		flock -n 200 || exit 2
 		find "logs/${CONFIG}/" -name 'messages.*' -print0 | xargs -0r rm -rf
 

@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 import irc3
-import os, logging, codecs, pytz
+import os, logging, re, codecs, pytz
 from tzlocal import get_localzone
 from datetime import datetime
+from irc3.utils import as_list
 __doc__ = '''
 =============================================
 :mod:`rawlogger.py` Channel raw logger plugin
@@ -58,14 +59,36 @@ class RawLogger:
 	"""Logger plugin. Use the :class:~file_handler handler by default
 	"""
 
+	def message_filtered(self, message):
+		if not self.filters or len(self.filters) == 0:
+			self.bot.log.debug('*** NO FILTERS ***')
+			return False
+
+		for message_filter in self.filters:
+			if message_filter.search(message):
+				self.bot.log.debug('*** LOGGED *** %s' % message_filter)
+				return False
+
+		self.bot.log.debug('*** FILTERED ***')
+		return True
+
 	def __init__(self, bot):
 		self.bot = bot
 		self.config = bot.config.get(__name__, {})
-		hdl = irc3.utils.maybedotted(self.config.get('handler', file_handler))
-		self.bot.log.debug('Handler: %s', hdl.__name__)
-		self.handler = hdl(bot)
+
+		handler = irc3.utils.maybedotted(self.config.get('handler', file_handler))
+		self.bot.log.debug('Handler: %s', handler.__name__)
+		self.handler = handler(bot)
+
+		self.filters = []
+		for message_filter in as_list(self.config.get('filters')):
+			self.bot.log.debug('Adding filter: %s', message_filter)
+			self.filters.append(re.compile(message_filter))
 
 	def process(self, **kwargs):
+		if self.message_filtered(kwargs['raw']):
+			return
+
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
 		self.handler(kw)
 

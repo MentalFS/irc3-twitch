@@ -6,7 +6,6 @@
 - prepare for termination of `kraken` API in the end of 2018, look for more `helix` data
 
 # rawlogger.py
-- add simple filtering (and hope that's enough)
 - add reload capability (for filters)
 
 # tweets.py

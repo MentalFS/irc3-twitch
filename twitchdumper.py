@@ -167,7 +167,7 @@ class TwitchLogger:
 					if 'url' in kraken_stream['channel']: del kraken_stream['channel']['url']
 					if 'updated_at' in kraken_stream['channel']: del kraken_stream['channel']['updated_at']
 					if 'video_banner' in kraken_stream['channel']: del kraken_stream['channel']['video_banner']
-					if 'views' in kraken_stream['channel']: del kraken_stream['channel']['views']
+					# if 'views' in kraken_stream['channel']: del kraken_stream['channel']['views']
 				if 'community_id' in kraken_stream: del kraken_stream['community_id']
 				if 'preview' in kraken_stream: del kraken_stream['preview']
 				self.process(channelname=channelname, endpoint='stream', api='kraken', json=json.dumps(kraken_stream))

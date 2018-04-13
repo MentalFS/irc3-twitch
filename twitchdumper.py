@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import irc3, requests, multiprocessing, json
+import irc3, requests, threading, json
 import os, logging, codecs, pytz
 from irc3.plugins.cron import cron
 from tzlocal import get_localzone
@@ -45,10 +45,9 @@ class file_handler:
 		self.encoding = bot.encoding
 		self.formatter = config['formatter']
 		self.duplicate_formatter = config['duplicate_formatter']
-		manager = multiprocessing.Manager()
-		self.last_json = manager.dict()
-		self.last_date = manager.dict()
-		self.last_file = manager.dict()
+		self.last_json = {}
+		self.last_date = {}
+		self.last_file = {}
 
 	def __call__(self, event):
 
@@ -184,7 +183,7 @@ class TwitchLogger:
 
 		chunks = [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
 		for chunk in chunks:
-			multiprocessing.Process(target=self.poll_chunk, args=(full, chunk)).start()
+			threading.Thread(target=self.poll_chunk, args=(full, chunk)).start()
 
 	# Keep set of channels
 	@irc3.event('(@\S+ )?JOIN #(?P<channelname>\S+)( :.*)?', iotype='out')

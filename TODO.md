@@ -1,6 +1,5 @@
 # twitchdumper.py
 - split stream info/viewer numbers, adjust dupe check for length
-- *use ThreadPoolExecutor instead of multiprocessing*
 - *cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled*
 - log or insert more data (game info, communities, metadata)
 - prepare for termination of `kraken` API in the end of 2018, look for more `helix` data

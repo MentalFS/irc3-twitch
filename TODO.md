@@ -6,10 +6,11 @@
 - prepare for termination of `kraken` API in the end of 2018, look for more `helix` data
 
 # rawlogger.py
-- add reload capability (for filters)
+- add reload capability
 
 # tweets.py
-- clean up the code, add reload capability
+- clean up the code
+- add reload capability
 - optionally filter tweets by keywords
 - account-specific formats
 - extend URLs, check markdown format for Discord
@@ -17,6 +18,7 @@
 
 # twitch.py
 - move room list from twitchdumper.py here and make it accessible including IDs
+- unify twitch api calls and move them here, with caching including bulk calls
 - special handling for chatrooms for readable names and joining
 - translate private messages and notices to whispers or messages  <!-- hint: connection=IrcConnection -->
 - optionally connect through websocket <!-- hint: connection=IrcConnection -->
@@ -36,7 +38,7 @@
 
 # other plugin ideas
 - autoreply on certain messages with short delay and data from tags
-- call webhooks or external programs on messages or Twitch events
+- call webhooks or external programs on messages or events
 - typical Twitch bot functionality as plugins (custom commands, moderation, ...)
 
 # general

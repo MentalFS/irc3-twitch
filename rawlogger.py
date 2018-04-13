@@ -60,16 +60,16 @@ class RawLogger:
 	"""
 
 	def message_filtered(self, message):
-		if not self.filters or len(self.filters) == 0:
-			self.bot.log.debug('*** NO FILTERS ***')
+		if len(self.filters) == 0:
+			# self.bot.log.debug('*** NO FILTERS ***')
 			return False
 
 		for message_filter in self.filters:
 			if message_filter.search(message):
-				self.bot.log.debug('*** LOGGED *** %s' % message_filter)
+				# self.bot.log.debug('*** LOGGED *** %s' % message_filter)
 				return False
 
-		self.bot.log.debug('*** FILTERED ***')
+		# self.bot.log.debug('*** FILTERED ***')
 		return True
 
 	def __init__(self, bot):

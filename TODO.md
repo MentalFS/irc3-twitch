@@ -8,7 +8,6 @@
 - add reload capability
 
 # tweets.py
-- clean up the code
 - add reload capability
 - optionally filter tweets by keywords
 - account-specific formats
@@ -31,9 +30,8 @@
 
 # new plugin: twitchlogger.py
 - create plugin as an extension/copy of the original logger.py
-- write USERNOTICE and CLEARCHAT messages at least
-- enable configuration with channelname
-- create helper script to convert raw logs to text logs
+- add USERNOTICE and CLEARCHAT messages at least
+- support HTML output with badges, emotes and image cache
 
 # other plugin ideas
 - autoreply on certain messages with short delay and data from tags

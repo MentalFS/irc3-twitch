@@ -60,14 +60,11 @@ class RawLogger:
 	"""
 
 	def message_filtered(self, message):
-		if len(self.filters) == 0:
-			# self.bot.log.debug('*** NO FILTERS ***')
+		if not self.message_filter:
 			return False
 
-		for message_filter in self.filters:
-			if message_filter.search(message):
-				# self.bot.log.debug('*** LOGGED *** %s' % message_filter)
-				return False
+		if self.message_filter.search(message):
+			return False
 
 		# self.bot.log.debug('*** FILTERED ***')
 		return True
@@ -80,10 +77,18 @@ class RawLogger:
 		self.bot.log.debug('Handler: %s', handler.__name__)
 		self.handler = handler(bot)
 
-		self.filters = []
+		message_filter_pattern = ""
 		for message_filter in as_list(self.config.get('filters')):
 			self.bot.log.debug('Adding filter: %s', message_filter)
-			self.filters.append(re.compile(message_filter))
+			re.compile(message_filter) # checks correct regex syntax
+			if message_filter_pattern:
+				message_filter_pattern += '|'
+			message_filter_pattern += '('
+			message_filter_pattern += message_filter
+			message_filter_pattern += ')'
+		self.message_filter = None
+		if message_filter_pattern:
+			self.message_filter = re.compile(message_filter_pattern)
 
 	def process(self, **kwargs):
 		if self.message_filtered(kwargs['raw']):

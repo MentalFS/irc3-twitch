@@ -6,7 +6,7 @@ from tzlocal import get_localzone
 from datetime import datetime
 __doc__ = '''
 ==============================================
-:mod:`twitchlogger.py` Twitch statistics plugin
+:mod:`twitchdumper.py` Twitch statistics plugin
 ==============================================
 
 Log statistics for twitch channels in raw json format
@@ -17,11 +17,11 @@ Log statistics for twitch channels in raw json format
 Usage::
 
 	>>> bot = IrcBot(**{
-	...	 'twitchstats': {
-	...		 'handler': 'twitchstats.file_handler',
+	...	 'twitchdumper': {
+	...		 'handler': 'twitchdumper.file_handler',
 	...	 },
 	... })
-	>>> bot.include('twitchstats')
+	>>> bot.include('twitchdumper')
 
 
 Available handlers:
@@ -69,13 +69,14 @@ class file_handler:
 				self.last_file[key] = filename
 				fd.write(self.formatter.format(**event) + '\r\n')
 
-@cron('0 * * * *')
-def schedule_full_poll(bot):
-	bot.poll_data(True)
 
-@cron('1-59 * * * *')
-def schedule_partial_poll(bot):
-	bot.poll_data(False)
+@cron('0 * * * *')
+def poll_user(bot):
+	bot.poll_user()
+
+@cron('* * * * *')
+def poll_stream(bot):
+	bot.poll_stream()
 
 
 @irc3.plugin
@@ -83,72 +84,45 @@ class TwitchLogger:
 	"""Logger plugin. Use the :class:~file_handler handler by default
 	"""
 
-	def __init__(self, bot):
-		self.bot = bot
-		self.config = bot.config.get(__name__, {})
-		hdl = irc3.utils.maybedotted(self.config.get('handler', file_handler))
-		self.bot.log.debug('Handler: %s', hdl.__name__)
-		self.handler = hdl(bot)
-		config = {
-			'chunk-size': 50,
-			'client-id': 'deh0rnosabytmgde2jtn13k8mo899ye',
-		}
-		config.update(bot.config.get(__name__, {}))
-		self.chunkSize = min(100, max(1, config['chunk-size']))
-		self.headers = {
-			'Client-ID': config['client-id'],
-			'Accept': 'application/vnd.twitchtv.v5+json',
-		}
-		self.connection_made()
-
-	def process(self, **kwargs):
-		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
-		self.handler(kw)
-
-	def poll_chunk(self, full, chunk):
-		channelnames = {}
-		helix_users = requests.get('https://api.twitch.tv/helix/users', params={'login': chunk}, headers=self.headers)
+	def poll_user_chunk(self, *chunk):
+		helix_users = requests.get('https://api.twitch.tv/helix/users', params={'id': chunk}, headers=self.headers)
 		self.bot.log.debug(helix_users.url)
+
 		if helix_users.status_code != 200:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_users))
 		else:
 			for helix_user in helix_users.json()['data']:
-				channelnames[helix_user['id']] = helix_user['login']
-				channelname = helix_user['login']
-				if full:
-					if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
-					if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
-					if 'view_count' in helix_user: del helix_user['view_count']
-					self.process(channelname=channelname, endpoint='user', api='helix', json=json.dumps(helix_user))
+				if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
+				if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
+				if 'view_count' in helix_user: del helix_user['view_count']
+				self.process(channelname=helix_user['login'], endpoint='user', api='helix', json=json.dumps(helix_user))
 
-		helix_streams = requests.get('https://api.twitch.tv/helix/streams', params={'user_login': chunk, 'first': 100}, headers=self.headers)
+		kraken_users = requests.get('https://api.twitch.tv/kraken/users', params={'id': ','.join(chunk)}, headers=self.headers)
+		self.bot.log.debug(kraken_users.url)
+		if kraken_users.status_code != 200:
+			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_users))
+		else:
+			for kraken_user in kraken_users.json()['users']:
+				if 'logo' in kraken_user: del kraken_user['logo']
+				if 'updated_at' in kraken_user: del kraken_user['updated_at']
+				self.process(channelname=kraken_user['name'], endpoint='user', api='kraken', json=json.dumps(kraken_user))
+
+
+	def poll_stream_chunk(self, *chunk):
+		helix_streams = requests.get('https://api.twitch.tv/helix/streams', params={'user_id': chunk, 'first': 100}, headers=self.headers)
 		self.bot.log.debug(helix_streams.url)
 		if helix_streams.status_code != 200:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_streams))
 		else:
 			for helix_stream in helix_streams.json()['data']:
-				channelname = channelnames[helix_stream['user_id']]
+				channelname = self.bot.twitch.channels[helix_stream['user_id']]
 				if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
 				if not channelname:
 					self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
 				else:
 					self.process(channelname=channelname, endpoint='stream', api='helix', json=json.dumps(helix_stream))
 
-		user_ids = []
-		kraken_users = requests.get('https://api.twitch.tv/kraken/users', params={'login': ','.join(chunk)}, headers=self.headers)
-		self.bot.log.debug(kraken_users.url)
-		if kraken_users.status_code != 200:
-			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_users))
-		else:
-			for kraken_user in kraken_users.json()['users']:
-				user_ids.append(kraken_user['_id'])
-				channelname = kraken_user['name']
-				if full:
-					if 'logo' in kraken_user: del kraken_user['logo']
-					if 'updated_at' in kraken_user: del kraken_user['updated_at']
-					self.process(channelname=channelname, endpoint='user', api='kraken', json=json.dumps(kraken_user))
-
-		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(user_ids), 'limit': 100}, headers=self.headers)
+		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
 		self.bot.log.debug(kraken_streams.url)
 		if kraken_streams.status_code != 200:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_streams))
@@ -172,38 +146,45 @@ class TwitchLogger:
 				self.process(channelname=channelname, endpoint='stream', api='kraken', json=json.dumps(kraken_stream))
 
 
-	@irc3.extend
-	def poll_data(self, full):
-		channels = list(self.channels)
+	def __init__(self, bot):
+		self.bot = bot
+		self.config = bot.config.get(__name__, {})
+		hdl = irc3.utils.maybedotted(self.config.get('handler', file_handler))
+		self.bot.log.debug('Handler: %s', hdl.__name__)
+		self.handler = hdl(bot)
+		config = {
+			'chunk-size': 99,
+			'client-id': 'deh0rnosabytmgde2jtn13k8mo899ye',
+		}
+		config.update(bot.config.get(__name__, {}))
+		self.chunkSize = min(100, max(1, config['chunk-size']))
+		self.headers = {
+			'Client-ID': config['client-id'],
+			'Accept': 'application/vnd.twitchtv.v5+json',
+		}
+		self.connection_made()
 
-		channel_count = len(channels)
+	def process(self, **kwargs):
+		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
+		self.handler(kw)
+
+	@irc3.extend
+	def poll_user(self):
+		for chunk in self.chunk_channels():
+			threading.Thread(target=self.poll_user_chunk, args=(chunk)).start()
+
+	@irc3.extend
+	def poll_stream(self):
+		for chunk in self.chunk_channels():
+			threading.Thread(target=self.poll_stream_chunk, args=(chunk)).start()
+
+	def chunk_channels(self):
+		channel_count = len(self.bot.twitch.channels)
 		if (channel_count != self.channel_count):
 			self.bot.log.info('Polling %d channels' % channel_count)
 			self.channel_count = channel_count
-
-		chunks = [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
-		for chunk in chunks:
-			threading.Thread(target=self.poll_chunk, args=(full, chunk)).start()
-
-	# Keep set of channels
-	@irc3.event('(@\S+ )?JOIN #(?P<channelname>\S+)( :.*)?', iotype='out')
-	@irc3.event('(@\S+ )?:\S+ JOIN #(?P<channelname>\S+)( :.*)?', iotype='in')
-	def on_join_channel(self, channelname):
-		if channelname in self.channels: return
-		self.bot.log.debug('JOIN: #%s' % channelname)
-		self.channels.add(channelname)
-
-	@irc3.event('(@\S+ )?PART #(?P<channelname>\S+)( :.*)?', iotype='out')
-	def on_part_channel(self, channelname):
-		if not channelname in self.channels: return
-		self.bot.log.debug('PART: #%s' % channelname)
-		self.channels.remove(channelname)
-
-	@irc3.event('(@\S+ )?:(?P<nickname>\S+)!\S+ PART #(?P<channelname>\S+)( :.*)?', iotype='in')
-	def on_part_channel_message(self, channelname, nickname):
-		if nickname != self.bot.nick: return
-		self.on_part_channel(channelname)
+		channels = list(self.bot.twitch.channels.keys())
+		return [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
 
 	def connection_made(self):
-		self.channels = set()
 		self.channel_count = -1

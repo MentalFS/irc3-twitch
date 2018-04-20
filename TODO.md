@@ -1,6 +1,5 @@
 # twitchdumper.py
-- split stream info/viewer numbers, adjust dupe check for length
-- *cache channel names and IDs from `ROOMSTATE`, only poll `user` endpoint when scheduled*
+- *split stream info/viewer numbers, adjust dupe check for length*
 - log or insert more data (game info, communities, metadata)
 - prepare for termination of `kraken` API in the end of 2018, look for more `helix` data
 
@@ -15,8 +14,8 @@
 - handle the same Twitter account configured multiple times
 
 # twitch.py
-- move room list from twitchdumper.py here and make it accessible including IDs
-- unify twitch api calls and move them here, with caching including bulk calls
+- poll channel ID if no ROOMSTATE is sent
+- unify twitch api calls and move them here as events
 - special handling for chatrooms for readable names and joining
 - translate private messages and notices to whispers or messages  <!-- hint: connection=IrcConnection -->
 - optionally connect through websocket <!-- hint: connection=IrcConnection -->

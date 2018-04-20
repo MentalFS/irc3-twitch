@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import irc3
-import os, logging, re, codecs, pytz
+import os, logging, codecs, pytz
 from tzlocal import get_localzone
 from datetime import datetime
 from irc3.utils import as_list
@@ -60,11 +60,12 @@ class RawLogger:
 	"""
 
 	def message_filtered(self, message):
-		if not self.message_filter:
+		if not self.message_filters:
 			return False
 
-		if self.message_filter.search(message):
-			return False
+		for message_filter in self.message_filters:
+			if message_filter in message:
+				return False
 
 		# self.bot.log.debug('*** FILTERED ***')
 		return True
@@ -77,18 +78,9 @@ class RawLogger:
 		self.bot.log.debug('Handler: %s', handler.__name__)
 		self.handler = handler(bot)
 
-		message_filter_pattern = ""
+		self.message_filters = []
 		for message_filter in as_list(self.config.get('filters')):
-			self.bot.log.debug('Adding filter: %s', message_filter)
-			re.compile(message_filter) # checks correct regex syntax
-			if message_filter_pattern:
-				message_filter_pattern += '|'
-			message_filter_pattern += '('
-			message_filter_pattern += message_filter
-			message_filter_pattern += ')'
-		self.message_filter = None
-		if message_filter_pattern:
-			self.message_filter = re.compile(message_filter_pattern)
+			self.message_filters.append(message_filter)
 
 	def process(self, **kwargs):
 		if self.message_filtered(kwargs['raw']):

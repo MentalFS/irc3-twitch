@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import irc3, asyncio, venusian
-import threading, html, time, traceback
+import threading, html, time
 import requests, json
 from irc3.utils import as_list
 from twitter.stream import Timeout, HeartbeatTimeout, Hangup

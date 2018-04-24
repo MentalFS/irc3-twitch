@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import irc3, requests, threading, json
-import os, logging, codecs, pytz
+import os, logging, codecs, pytz, collections
 from irc3.plugins.cron import cron
 from tzlocal import get_localzone
 from datetime import datetime
@@ -37,21 +37,27 @@ class file_handler:
 	def __init__(self, bot):
 		config = {
 			'filename': '~/.irc3/logs/{host}/{channel}-{date:%Y-%m-%d}.{endpoint}.log',
-			'formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} {json}',
-			'duplicate_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} @{reference:%Y-%m-%dT%H:%M:%S.%f%z}'
+			'data_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} {data_json}',
+			'delta_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} @{reference:%Y-%m-%dT%H:%M:%S.%f%z} {delta_json}'
 		}
 		config.update(bot.config.get(__name__, {}))
 		self.filename = config['filename']
-		self.encoding = bot.encoding
-		self.formatter = config['formatter']
-		self.duplicate_formatter = config['duplicate_formatter']
-		self.last_json = {}
-		self.last_date = {}
-		self.last_file = {}
+		self.data_formatter = config['data_formatter']
+		self.delta_formatter = config['delta_formatter']
 
-	def __call__(self, data, **event):
-		event = dict(json=json.dumps(data), channel='#%s' % event['channelname'],
-            date=datetime.now(get_localzone()), **event)
+		self.encoding = bot.encoding
+		self.base_json = {}
+		self.base_date = {}
+		self.base_file = {}
+
+	def __call__(self, api, endpoint, channelname, data, delta={}):
+		data_json=json.dumps(data)
+		delta_json=json.dumps(delta)
+		channel='#%s' % channelname
+		date=datetime.now(get_localzone())
+		event = dict(api=api, endpoint=endpoint, channelname=channelname,
+			data=data, data_json=data_json, delta=delta, delta_json=delta_json,
+			channel=channel, date=date)
 
 		filename = self.filename.format(**event)
 		if not os.path.isfile(filename):
@@ -59,20 +65,28 @@ class file_handler:
 			if not os.path.isdir(dirname):  # pragma: no cover
 				os.makedirs(dirname)
 
-		key = event['channel']+'|'+event['endpoint']+'|'+event['api']
-		duplicate = key in self.last_json and self.last_file[key] == filename and self.last_json[key] == event['json']
+		key = channel+'|'+endpoint+'|'+api
+		is_delta = key in self.base_json and self.base_file[key] == filename and self.base_json[key] == data_json
 
 		with codecs.open(filename, 'a+', self.encoding) as fd:
-			if duplicate:
-				fd.write(self.duplicate_formatter.format(reference=self.last_date[key], **event) + '\r\n')
+			if is_delta:
+				fd.write(self.delta_formatter.format(reference=self.base_date[key], json=delta_json, **event) + '\r\n')
 			else:
-				self.last_json[key] = event['json']
-				self.last_date[key] = event['date']
-				self.last_file[key] = filename
-				fd.write(self.formatter.format(**event) + '\r\n')
+				self.base_json[key] = data_json
+				self.base_date[key] = date
+				self.base_file[key] = filename
+				fd.write(self.data_formatter.format(json=data_json, **event) + '\r\n')
+
+	def merge(self, data, delta):
+		for k, v in delta.items():
+			if (k in data and isinstance(data[k], dict) and isinstance(delta[k], collections.Mapping)):
+				self.merge(data[k], delta[k])
+			else:
+				data[k] = delta[k]
 
 
-@cron('0 * * * *')
+#@cron('0 * * * *')
+@cron('* * * * *') #FIXME
 def poll_user(bot):
 	bot.poll_user()
 
@@ -97,7 +111,7 @@ class TwitchLogger:
 				if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
 				if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
 				if 'view_count' in helix_user: del helix_user['view_count']
-				self.process(data=helix_user, channelname=helix_user['login'], endpoint='user', api='helix')
+				self.process(api='helix', endpoint='user', channelname=helix_user['login'], data=helix_user)
 
 		kraken_users = requests.get('https://api.twitch.tv/kraken/users', params={'id': ','.join(chunk)}, headers=self.headers)
 		self.bot.log.debug(kraken_users.url)
@@ -107,7 +121,7 @@ class TwitchLogger:
 			for kraken_user in kraken_users.json()['users']:
 				if 'logo' in kraken_user: del kraken_user['logo']
 				if 'updated_at' in kraken_user: del kraken_user['updated_at']
-				self.process(data=kraken_user, channelname=kraken_user['name'], endpoint='user', api='kraken')
+				self.process(api='kraken', endpoint='user', channelname=kraken_user['name'], data=kraken_user)
 
 
 	def poll_stream_chunk(self, *chunk):
@@ -123,7 +137,7 @@ class TwitchLogger:
 				if not channelname:
 					self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
 				else:
-					self.process(data=helix_stream, channelname=channelname, endpoint='stream', api='helix')
+					self.process(api='helix', endpoint='stream', channelname=channelname, data=helix_stream)
 
 		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams',
 			params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
@@ -147,7 +161,7 @@ class TwitchLogger:
 					# if 'views' in kraken_stream['channel']: del kraken_stream['channel']['views']
 				if 'community_id' in kraken_stream: del kraken_stream['community_id']
 				if 'preview' in kraken_stream: del kraken_stream['preview']
-				self.process(data=kraken_stream, channelname=channelname, endpoint='stream', api='kraken')
+				self.process(api='kraken', endpoint='stream', channelname=channelname, data=kraken_stream)
 
 
 	def __init__(self, bot):

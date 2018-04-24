@@ -1,19 +1,19 @@
-# twitchdumper.py
-- *split stream info/viewer numbers, adjust dupe check for length*
-- extract API code into classes and make them configurable
-- log or insert more data (game info, communities, metadata)
-- prepare for termination of `kraken` API in the end of 2018, look for more `helix` data
-
-# rawlogger.py
-- add reload capability
-- Log NAMES reply
-
 # tweets.py
+- refactor configurations into classes
 - add reload capability
 - optionally filter tweets by keywords
 - account-specific formats
 - extend URLs, check markdown format for Discord
 - handle the same Twitter account configured multiple times
+
+# rawlogger.py
+- add reload capability
+- Log NAMES reply
+
+# twitchdumper.py
+- extract API code into classes and make them configurable
+- log or insert more data (game info, communities, metadata)
+- prepare for termination of `kraken` API in the end of 2018, look for more `helix` data
 
 # twitch.py
 - poll channel ID if no ROOMSTATE is sent

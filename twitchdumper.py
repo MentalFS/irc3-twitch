@@ -51,13 +51,10 @@ class file_handler:
 		self.base_file = {}
 
 	def __call__(self, api, endpoint, channelname, data, delta={}):
-		data_json=json.dumps(data)
-		delta_json=json.dumps(delta)
-		channel='#%s' % channelname
-		date=datetime.now(get_localzone())
+		channel = '#%s' % channelname
+		date = datetime.now(get_localzone())
 		event = dict(api=api, endpoint=endpoint, channelname=channelname,
-			data=data, data_json=data_json, delta=delta, delta_json=delta_json,
-			channel=channel, date=date)
+			data=data, delta=delta, channel=channel, date=date)
 
 		filename = self.filename.format(**event)
 		if not os.path.isfile(filename):
@@ -66,16 +63,21 @@ class file_handler:
 				os.makedirs(dirname)
 
 		key = channel+'|'+endpoint+'|'+api
-		is_delta = key in self.base_json and self.base_file[key] == filename and self.base_json[key] == data_json
+		base_json = json.dumps(data)
+		is_delta = key in self.base_json and self.base_file[key] == filename and self.base_json[key] == base_json
 
 		with codecs.open(filename, 'a+', self.encoding) as fd:
 			if is_delta:
-				fd.write(self.delta_formatter.format(reference=self.base_date[key], json=delta_json, **event) + '\r\n')
+				delta_json = json.dumps(delta)
+				fd.write(self.delta_formatter.format(reference=self.base_date[key],
+					delta_json=delta_json, json=delta_json, **event) + '\r\n')
 			else:
-				self.base_json[key] = data_json
+				self.base_json[key] = base_json
 				self.base_date[key] = date
 				self.base_file[key] = filename
-				fd.write(self.data_formatter.format(json=data_json, **event) + '\r\n')
+				self.merge(data, delta)
+				data_json = json.dumps(data)
+				fd.write(self.data_formatter.format(data_json=data_json, json=data_json, **event) + '\r\n')
 
 	def merge(self, data, delta):
 		for k, v in delta.items():
@@ -85,8 +87,7 @@ class file_handler:
 				data[k] = delta[k]
 
 
-#@cron('0 * * * *')
-@cron('* * * * *') #FIXME
+@cron('0 * * * *')
 def poll_user(bot):
 	bot.poll_user()
 
@@ -108,10 +109,11 @@ class TwitchLogger:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_users))
 		else:
 			for helix_user in helix_users.json()['data']:
-				if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
-				if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
-				if 'view_count' in helix_user: del helix_user['view_count']
-				self.process(api='helix', endpoint='user', channelname=helix_user['login'], data=helix_user)
+				delta = {}
+				if 'view_count' in helix_user:
+					delta['view_count'] = helix_user['view_count']
+					del helix_user['view_count']
+				self.process(api='helix', endpoint='user', channelname=helix_user['login'], data=helix_user, delta=delta)
 
 		kraken_users = requests.get('https://api.twitch.tv/kraken/users', params={'id': ','.join(chunk)}, headers=self.headers)
 		self.bot.log.debug(kraken_users.url)
@@ -119,9 +121,11 @@ class TwitchLogger:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_users))
 		else:
 			for kraken_user in kraken_users.json()['users']:
-				if 'logo' in kraken_user: del kraken_user['logo']
-				if 'updated_at' in kraken_user: del kraken_user['updated_at']
-				self.process(api='kraken', endpoint='user', channelname=kraken_user['name'], data=kraken_user)
+				delta = {}
+				if 'updated_at' in kraken_user:
+					delta['updated_at'] = kraken_user['updated_at']
+					del kraken_user['updated_at']
+				self.process(api='kraken', endpoint='user', channelname=kraken_user['name'], data=kraken_user, delta=delta)
 
 
 	def poll_stream_chunk(self, *chunk):
@@ -133,11 +137,15 @@ class TwitchLogger:
 		else:
 			for helix_stream in helix_streams.json()['data']:
 				channelname = self.bot.twitch.channels[helix_stream['user_id']]
-				if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
 				if not channelname:
 					self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
 				else:
-					self.process(api='helix', endpoint='stream', channelname=channelname, data=helix_stream)
+					if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
+					delta = {}
+					if 'viewer_count' in helix_stream:
+						delta['viewer_count'] = helix_stream['viewer_count']
+						del helix_stream['viewer_count']
+					self.process(api='helix', endpoint='stream', channelname=channelname, data=helix_stream, delta=delta)
 
 		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams',
 			params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
@@ -148,20 +156,30 @@ class TwitchLogger:
 			for kraken_stream in kraken_streams.json()['streams']:
 				channelname = kraken_stream['channel']['name']
 				if 'channel' in kraken_stream:
-					if 'created_at' in kraken_stream['channel']: del kraken_stream['channel']['created_at']
 					if 'logo' in kraken_stream['channel']: del kraken_stream['channel']['logo']
 					if 'description' in kraken_stream['channel']: del kraken_stream['channel']['description']
-					if 'partner' in kraken_stream['channel']: del kraken_stream['channel']['partner']
 					if 'profile_banner' in kraken_stream['channel']: del kraken_stream['channel']['profile_banner']
 					if 'profile_banner_background_color' in kraken_stream['channel']:
 						del kraken_stream['channel']['profile_banner_background_color']
-					if 'url' in kraken_stream['channel']: del kraken_stream['channel']['url']
 					if 'updated_at' in kraken_stream['channel']: del kraken_stream['channel']['updated_at']
 					if 'video_banner' in kraken_stream['channel']: del kraken_stream['channel']['video_banner']
-					# if 'views' in kraken_stream['channel']: del kraken_stream['channel']['views']
-				if 'community_id' in kraken_stream: del kraken_stream['community_id']
 				if 'preview' in kraken_stream: del kraken_stream['preview']
-				self.process(api='kraken', endpoint='stream', channelname=channelname, data=kraken_stream)
+				delta = {}
+				if 'average_fps' in kraken_stream:
+					delta['average_fps'] = kraken_stream['average_fps']
+					del kraken_stream['average_fps']
+				if 'viewers' in kraken_stream:
+					delta['viewers'] = kraken_stream['viewers']
+					del kraken_stream['viewers']
+				if 'channel' in kraken_stream:
+					delta['channel'] = {}
+					if 'followers' in kraken_stream['channel']:
+						delta['channel']['followers'] = kraken_stream['channel']['followers']
+						del kraken_stream['channel']['followers']
+					if 'views' in kraken_stream['channel']:
+						delta['channel']['views'] = kraken_stream['channel']['views']
+						del kraken_stream['channel']['views']
+				self.process(api='kraken', endpoint='stream', channelname=channelname, data=kraken_stream, delta=delta)
 
 
 	def __init__(self, bot):

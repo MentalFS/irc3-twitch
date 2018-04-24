@@ -1,10 +1,12 @@
 # twitchdumper.py
 - *split stream info/viewer numbers, adjust dupe check for length*
+- extract API code into classes and make them configurable
 - log or insert more data (game info, communities, metadata)
 - prepare for termination of `kraken` API in the end of 2018, look for more `helix` data
 
 # rawlogger.py
 - add reload capability
+- Log NAMES reply
 
 # tweets.py
 - add reload capability
@@ -20,21 +22,12 @@
 - translate private messages and notices to whispers or messages  <!-- hint: connection=IrcConnection -->
 - optionally connect through websocket <!-- hint: connection=IrcConnection -->
 
-# new plugin: twitchstatistics.py
-- create plugin that saves relevant statistics to database-like files (tab separated files or SQLite)
-- add IRC statistics: number of messages, distinct chatters, nummber of bans/timeouts, subs/other notices
-- track subscription numbers
-- create emote statistics
-- create stats per stream and per minute, maybe day/month
-
-# new plugin: twitchlogger.py
-- create plugin as an extension/copy of the original logger.py
-- add USERNOTICE and CLEARCHAT messages at least
-- support HTML output with badges, emotes and image cache
-
 # other plugin ideas
+- periodically call NAMES (or maybe other commands)
 - autoreply on certain messages with short delay and data from tags
 - call webhooks or external programs on messages or events
+- save relevant statistics (sub numbers, chat activity) to database (SQLITE)
+- log Twitch chat and events in a readable text format that doesn't take as much space as raw IRC
 - typical Twitch bot functionality as plugins (custom commands, moderation, ...)
 
 # general

@@ -49,7 +49,9 @@ class file_handler:
 		self.last_date = {}
 		self.last_file = {}
 
-	def __call__(self, event):
+	def __call__(self, data, **event):
+		event = dict(json=json.dumps(data), channel='#%s' % event['channelname'],
+            date=datetime.now(get_localzone()), **event)
 
 		filename = self.filename.format(**event)
 		if not os.path.isfile(filename):
@@ -95,7 +97,7 @@ class TwitchLogger:
 				if 'offline_image_url' in helix_user: del helix_user['offline_image_url']
 				if 'profile_image_url' in helix_user: del helix_user['profile_image_url']
 				if 'view_count' in helix_user: del helix_user['view_count']
-				self.process(channelname=helix_user['login'], endpoint='user', api='helix', json=json.dumps(helix_user))
+				self.process(data=helix_user, channelname=helix_user['login'], endpoint='user', api='helix')
 
 		kraken_users = requests.get('https://api.twitch.tv/kraken/users', params={'id': ','.join(chunk)}, headers=self.headers)
 		self.bot.log.debug(kraken_users.url)
@@ -105,11 +107,12 @@ class TwitchLogger:
 			for kraken_user in kraken_users.json()['users']:
 				if 'logo' in kraken_user: del kraken_user['logo']
 				if 'updated_at' in kraken_user: del kraken_user['updated_at']
-				self.process(channelname=kraken_user['name'], endpoint='user', api='kraken', json=json.dumps(kraken_user))
+				self.process(data=kraken_user, channelname=kraken_user['name'], endpoint='user', api='kraken')
 
 
 	def poll_stream_chunk(self, *chunk):
-		helix_streams = requests.get('https://api.twitch.tv/helix/streams', params={'user_id': chunk, 'first': 100}, headers=self.headers)
+		helix_streams = requests.get('https://api.twitch.tv/helix/streams',
+			params={'user_id': chunk, 'first': 100}, headers=self.headers)
 		self.bot.log.debug(helix_streams.url)
 		if helix_streams.status_code != 200:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_streams))
@@ -120,9 +123,10 @@ class TwitchLogger:
 				if not channelname:
 					self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
 				else:
-					self.process(channelname=channelname, endpoint='stream', api='helix', json=json.dumps(helix_stream))
+					self.process(data=helix_stream, channelname=channelname, endpoint='stream', api='helix')
 
-		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams', params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
+		kraken_streams = requests.get('https://api.twitch.tv/kraken/streams',
+			params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
 		self.bot.log.debug(kraken_streams.url)
 		if kraken_streams.status_code != 200:
 			self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_streams))
@@ -143,15 +147,15 @@ class TwitchLogger:
 					# if 'views' in kraken_stream['channel']: del kraken_stream['channel']['views']
 				if 'community_id' in kraken_stream: del kraken_stream['community_id']
 				if 'preview' in kraken_stream: del kraken_stream['preview']
-				self.process(channelname=channelname, endpoint='stream', api='kraken', json=json.dumps(kraken_stream))
+				self.process(data=kraken_stream, channelname=channelname, endpoint='stream', api='kraken')
 
 
 	def __init__(self, bot):
 		self.bot = bot
 		self.config = bot.config.get(__name__, {})
-		hdl = irc3.utils.maybedotted(self.config.get('handler', file_handler))
-		self.bot.log.debug('Handler: %s', hdl.__name__)
-		self.handler = hdl(bot)
+		handler = irc3.utils.maybedotted(self.config.get('handler', file_handler))
+		self.bot.log.debug('Handler: %s', handler.__name__)
+		self.process = handler(bot)
 		config = {
 			'chunk-size': 99,
 			'client-id': 'deh0rnosabytmgde2jtn13k8mo899ye',
@@ -163,10 +167,6 @@ class TwitchLogger:
 			'Accept': 'application/vnd.twitchtv.v5+json',
 		}
 		self.connection_made()
-
-	def process(self, **kwargs):
-		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
-		self.handler(kw)
 
 	@irc3.extend
 	def poll_user(self):

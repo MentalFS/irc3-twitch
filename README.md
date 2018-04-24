@@ -16,5 +16,5 @@ Logs messages (only to channels) as raw IRC lines to files.
 ### twitch.py
 Enables IRCv3 capabilities on the Twitch network and does some basic handling.
 
-### twitchlogger.py
+### twitchdumper.py
 Logs JSON API requests [new](https://dev.twitch.tv/docs/api) and [old](https://dev.twitch.tv/docs/v5) about the Twitch channels the client is joined to. Those can become quite large, so they only write a timestamp when the JSON object didn't change.

@@ -3,7 +3,6 @@ from irc3.plugins.command import command
 import irc3
 
 class Access(object):
-
 	bot = None
 	channels = {}
 
@@ -12,7 +11,6 @@ class Access(object):
 
 @irc3.plugin
 class Twitch:
-
 	def __init__(self, bot):
 		self.bot = bot
 		self.access = Access(bot)

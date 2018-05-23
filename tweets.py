@@ -30,7 +30,7 @@ identifier.channels = #channel1 #channel2
 
 ## these are just for Discord
 webhook_username = Username shown as bot name
-webhook_avatar = https://... (URL ro an avatar image)
+webhook_avatar = https://... (URL to an avatar image)
 identifier.webhook = https://discordapp.com/api/webhooks/...
 [...]
 
@@ -140,7 +140,6 @@ class Tweets:
 
 			if user_tweet:
 				if user in self.twitter_channels:
-					# text = text.replace('\r', '').replace('\n', ' ')
 					for tweet_channel in self.twitter_channels[user]:
 						self.bot.privmsg(tweet_channel,
 							self.tweet_format.format(

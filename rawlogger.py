@@ -79,8 +79,10 @@ class RawLogger:
 		self.handler = handler(bot)
 
 		self.message_filters = []
+		#self.bot.log.info('Filters:')
 		for message_filter in as_list(self.config.get('filters')):
 			self.message_filters.append(message_filter)
+			#self.bot.log.info(message_filter)
 
 	def process(self, **kwargs):
 		if self.message_filtered(kwargs['raw']):

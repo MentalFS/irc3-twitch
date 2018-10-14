@@ -26,10 +26,9 @@ shift
 
 case "$1" in
 	"--logs")
-		cd logs
 		shift
-		tail "$@" "${CONFIG}"/*.log \
-		| egrep --color '^|^==> .* <==$'
+		tail "$@" "$PWD/logs/${CONFIG}"/*.log \
+		| egrep --color "^|^==> |$CONFIG/[^\.]*| <==$"
 		echo
 		;;
 	"--reload")

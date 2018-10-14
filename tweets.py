@@ -209,6 +209,20 @@ class Tweets:
 		except Exception as e:
 			self.bot.log.exception(e)
 
+	def message_filtered(self, channel, message):
+		if not channel in self.twitterlters:
+			return False
+		if not self.message_filters[channel]:
+			return False
+
+		for message_filter in self.message_filters[channel]:
+			if message_filter in message:
+				return False
+
+		# self.bot.log.debug('*** FILTERED ***')
+		return True
+
+
 	def connection_made(self):
 		if not self.twitter_connected:
 			self.connect_twitter()

@@ -44,19 +44,20 @@ class Tweets:
 
 	def __init__(self, bot):
 		self.bot = bot
+		self.twitter_stream = self.bot.get_social_connection(id='twitter_stream')
+		self.twitter_api = self.bot.get_social_connection(id='twitter')
+
 		self.twitter_channels = {}
 		self.twitter_ids = {}
 		self.twitter_webhooks = {}
-		self.twitter_stream = bot.get_social_connection(id='twitter_stream')
-		self.twitter_api = self.bot.get_social_connection(id='twitter')
-		self.config = self.bot.config.get(__name__, {})
+		self.twitter_filters = {}
+		self.twitter_connected = False
 
+		self.config = self.bot.config.get(__name__, {})
 		self.tweet_channels = as_list(self.config.get('tweet_channels'))
 		self.tweet_format = self.config.get('tweet_format', '@{screen_name}: {text}')
 		self.webhook_username = self.config.get('webhook_username')
 		self.webhook_avatar = self.config.get('webhook_avatar')
-
-		self.twitter_connected = False
 
 	def connect_twitter(self):
 		for config_key, config_value in self.config.items():
@@ -70,6 +71,7 @@ class Tweets:
 				if self.config.get(config_id + '.channels'):
 					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_id+'.channels'))
 				self.twitter_webhooks[screen_name.lower()] = self.config.get(config_id+'.webhook')
+				self.twitter_filters[screen_name.lower()] = as_list(self.config.get(config_id+'.filters'))
 
 		threading.Thread(target=self.receive_stream).start()
 
@@ -136,7 +138,8 @@ class Tweets:
 
 			user_tweet = (user in self.twitter_channels or user in self.twitter_webhooks)  \
 				and (tweet['in_reply_to_screen_name'] == None or tweet['in_reply_to_screen_name'].lower() == user) \
-				and (not text.startswith('@') or text.lower().startswith('@' + user))
+				and (not text.startswith('@') or text.lower().startswith('@' + user)) \
+				and (not self.text_filtered(user, text))
 
 			if user_tweet:
 				if user in self.twitter_channels:
@@ -148,7 +151,21 @@ class Tweets:
 				if self.twitter_webhooks[user]:
 					self.send_webhook(self.twitter_webhooks[user], screen_name, user_name, text, tweet, url)
 			else:
-				self.bot.log.debug('Ignored reply %s' % url)
+				self.bot.log.debug('Ignored reply or filtered message %s' % url)
+
+	def text_filtered(self, user, text):
+		if not user in self.twitter_filters:
+			return False
+		if not self.twitter_filters[user]:
+			return False
+
+		for twitter_filter in self.twitter_filters[user]:
+			if twitter_filter in text:
+				# self.bot.log.debug('FOUND FILTER: %s' % twitter_filter)
+				return False
+
+		# self.bot.log.debug('FILTERED: %s' % text)
+		return True
 
 	def send_webhook(self, webhook, screen_name, user_name, text, tweet, url):
 		try:
@@ -208,20 +225,6 @@ class Tweets:
 			self.bot.log.debug('Sent tweet %s to %s' % (url, webhook))
 		except Exception as e:
 			self.bot.log.exception(e)
-
-	def message_filtered(self, channel, message):
-		if not channel in self.twitterlters:
-			return False
-		if not self.message_filters[channel]:
-			return False
-
-		for message_filter in self.message_filters[channel]:
-			if message_filter in message:
-				return False
-
-		# self.bot.log.debug('*** FILTERED ***')
-		return True
-
 
 	def connection_made(self):
 		if not self.twitter_connected:

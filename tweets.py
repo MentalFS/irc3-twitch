@@ -159,12 +159,13 @@ class Tweets:
 		if not self.twitter_filters[user]:
 			return False
 
+		text_lower = text.lower()
 		for twitter_filter in self.twitter_filters[user]:
-			if twitter_filter in text:
-				# self.bot.log.debug('FOUND FILTER: %s' % twitter_filter)
+			if twitter_filter.lower() in text_lower:
+				#self.bot.log.debug('FOUND FILTER: %s' % twitter_filter)
 				return False
 
-		# self.bot.log.debug('FILTERED: %s' % text)
+		#self.bot.log.debug('FILTERED: %s' % text)
 		return True
 
 	def send_webhook(self, webhook, screen_name, user_name, text, tweet, url):

@@ -5,7 +5,7 @@
 ### tweets.py
 - refactor configurations into classes
 - add reload capability
-- optionally filter tweets by keywords
+- command to post a status to a channel and/or webhook without filtering
 - account-specific formats
 - delay posting: aggregate tweet chains, respect deletions in that timeframe
 - extend URLs, check markdown format for Discord
@@ -18,7 +18,7 @@
 ### twitchdumper.py
 - extract API code into classes and make them configurable
 - log or insert more data (game info, metadata)
-- prepare for termination of `kraken` API in the end of 2018
+- prepare for termination of `kraken` API
 - look for more `helix` data (tags, followers)
 
 ### twitch.py

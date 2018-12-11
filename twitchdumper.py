@@ -133,6 +133,7 @@ class TwitchLogger:
 						channelname=kraken_user['name'], data=kraken_user, delta=delta)
 		except Exception as e:
 			self.bot.log.exception(e)
+			self.channel_count = -1
 
 	def poll_stream_chunk(self, *chunk):
 		try:
@@ -196,6 +197,7 @@ class TwitchLogger:
 						channelname=channelname, data=kraken_stream, delta=delta)
 		except Exception as e:
 			self.bot.log.exception(e)
+			self.channel_count = -1
 
 
 	def __init__(self, bot):

@@ -109,6 +109,7 @@ class TwitchLogger:
 
 			if helix_users.status_code != 200:
 				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_users))
+				self.channel_count = -1
 			else:
 				for helix_user in helix_users.json()['data']:
 					delta = {}
@@ -123,6 +124,7 @@ class TwitchLogger:
 			self.bot.log.debug(kraken_users.url)
 			if kraken_users.status_code != 200:
 				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_users))
+				self.channel_count = -1
 			else:
 				for kraken_user in kraken_users.json()['users']:
 					delta = {}
@@ -142,11 +144,13 @@ class TwitchLogger:
 			self.bot.log.debug(helix_streams.url)
 			if helix_streams.status_code != 200:
 				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_streams))
+				self.channel_count = -1
 			else:
 				for helix_stream in helix_streams.json()['data']:
 					channelname = self.bot.twitch.channels[helix_stream['user_id']]
 					if not channelname:
 						self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
+						self.channel_count = -1
 					else:
 						if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
 						delta = {}
@@ -161,6 +165,7 @@ class TwitchLogger:
 			self.bot.log.debug(kraken_streams.url)
 			if kraken_streams.status_code != 200:
 				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_streams))
+				self.channel_count = -1
 			else:
 				for kraken_stream in kraken_streams.json()['streams']:
 					channelname = kraken_stream['channel']['name']

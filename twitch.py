@@ -37,3 +37,9 @@ class Twitch:
 	def on_part_channel_message(self, channelname, nickname):
 		if nickname != self.bot.nick: return
 		self.on_part_channel(channelname)
+
+	@irc3.event('(@\S+ )?:\S+ RECONNECT( .*)?', iotype='in')
+	def on_reconnect(self, id, channelname):
+		self.bot.log.info('Twitch requested a reconnect.')
+		plugin = bot.get_plugin(utils.maybedotted('irc3.plugins.core.Core'))
+		bot.loop.call_soon(plugin.reconnect)

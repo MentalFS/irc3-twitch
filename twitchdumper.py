@@ -60,7 +60,7 @@ class file_handler:
 		if not os.path.isfile(filename):
 			dirname = os.path.dirname(filename)
 			if not os.path.isdir(dirname):  # pragma: no cover
-				os.makedirs(dirname)
+				os.makedirs(dirname, exist_ok=True)
 
 		key = channel+'|'+endpoint+'|'+api
 		base_json = json.dumps(data)

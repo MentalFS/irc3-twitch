@@ -231,11 +231,11 @@ class Tweets:
 		if not self.twitter_connected:
 			self.connect_twitter()
 
-	@command(permission='admin', venusian_category='irc3.debug')
-	def reload_tweet(self, mask, target, args):
+	@command(permission='admin')
+	def status(self, mask, target, args):
 		"""Handle a specific tweet (again)
 
-            %%reload_tweet <id>
+            %%status <id>
         """
 		status = args['<id>']
 		self.bot.log.info('Fetching and handling tweet: %s' % status)

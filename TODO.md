@@ -18,10 +18,12 @@
 - look for more `helix` data (tags, followers)
 
 ### twitch.py
+- Check: Translating outgoing notices to messages by listening on the event
 - unify twitch api calls and move them here as events
 - override `IrcConnection`: whisper/notice/query translation for commands, readable chatroom names.
 
 ## other plugin ideas
+- autojoin all followed channels (autopart? exceptions?)
 - autoreply on certain messages with short delay and data from tags
 - call webhooks or external programs on messages or events
 - typical Twitch bot functionality as plugins (custom commands, moderation, loyalty points & games)

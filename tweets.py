@@ -237,10 +237,10 @@ class Tweets:
 
             %%status <id>
         """
-		status = args['<id>']
-		self.bot.log.info('Fetching and handling tweet: %s' % status)
-		tweet = self.twitter_api.statuses.show(id=status, include_entities="true", tweet_mode="compability")
-		tweet['extended_tweet'] = self.twitter_api.statuses.show(id=status, include_entities="true", tweet_mode="extended")
+		status_id = args['<id>']
+		self.bot.log.info('Fetching and handling tweet: %s' % status_id)
+		tweet = self.twitter_api.statuses.show(id=status_id, include_entities="true", tweet_mode="compability")
+		tweet['extended_tweet'] = self.twitter_api.statuses.show(id=status_id, include_entities="true", tweet_mode="extended")
 		self.bot.log.debug(json.dumps(tweet))
 		self.handle_tweet(tweet)
 		return 'Loaded and handled tweet: @%s/%s' % (tweet['user']['screen_name'], tweet['id_str'])

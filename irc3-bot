@@ -30,7 +30,7 @@ case "$1" in
 		#tail "$@" "$PWD/logs/${CONFIG}"/*.log \
 		find "$PWD/logs/${CONFIG}" -name '*.log' -size +0 -print0 \
 		| xargs -0r tail -v "$@" \
-		| egrep --color "^|^==> |$CONFIG/[^\.]*| <==$"
+		| egrep --color=always "^|^==> |$CONFIG/[^\.]*| <==$"
 		echo
 		;;
 	"--reload")

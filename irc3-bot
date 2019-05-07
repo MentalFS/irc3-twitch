@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -l
 if [ -z "$*" ] || [ "$1" == "--help" ] ; then
 	echo "Helper script to run or manage an irc3 bot."
 	echo "Usage: $(basename "$0") CONFIGURATION [OPTION]..."

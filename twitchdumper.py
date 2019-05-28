@@ -34,6 +34,10 @@ class file_handler:
 	"""Write logs to file in ~/.irc3/logs
 	"""
 
+	requires = [
+		'twitch',
+	]
+
 	def __init__(self, bot):
 		config = {
 			'filename': '~/.irc3/logs/{host}/{channel}-{date:%Y-%m-%d}.{endpoint}.log',
@@ -152,6 +156,9 @@ class TwitchLogger:
 						self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
 						self.channel_count = -1
 					else:
+						if 'community_ids' in helix_stream: del helix_stream['community_ids']
+						if 'tag_ids' in helix_stream and isinstance(helix_stream['tag_ids'], list):
+							helix_stream['tag_ids'].sort()
 						if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
 						delta = {}
 						if 'viewer_count' in helix_stream:
@@ -182,6 +189,8 @@ class TwitchLogger:
 							del kraken_stream['channel']['updated_at']
 						if 'video_banner' in kraken_stream['channel']:
 							del kraken_stream['channel']['video_banner']
+					if 'community_id' in kraken_stream: del kraken_stream['community_id']
+					if 'community_ids' in kraken_stream: del kraken_stream['community_ids']
 					if 'preview' in kraken_stream: del kraken_stream['preview']
 					delta = {}
 					if 'average_fps' in kraken_stream:

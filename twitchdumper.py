@@ -222,7 +222,7 @@ class TwitchLogger:
 		self.process = handler(bot)
 		config = {
 			'chunk-size': 99,
-			'client-id': 'deh0rnosabytmgde2jtn13k8mo899ye',
+			'client-id': '1u66z1u96b69spbutvthgach2rbcd0',
 		}
 		config.update(bot.config.get(__name__, {}))
 		self.chunkSize = min(100, max(1, config['chunk-size']))

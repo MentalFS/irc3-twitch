@@ -112,7 +112,7 @@ class TwitchLogger:
 			self.bot.log.debug(helix_users.url)
 
 			if helix_users.status_code != 200:
-				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_users))
+				self.bot.log.error('https://api.twitch.tv/helix/users - {r.status_code}\n{r.text}'.format(r=helix_users))
 				self.channel_count = -1
 			else:
 				for helix_user in helix_users.json()['data']:
@@ -127,7 +127,7 @@ class TwitchLogger:
 				params={'id': ','.join(chunk)}, headers=self.headers)
 			self.bot.log.debug(kraken_users.url)
 			if kraken_users.status_code != 200:
-				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_users))
+				self.bot.log.error('https://api.twitch.tv/kraken/users - {r.status_code}\n{r.text}'.format(r=kraken_users))
 				self.channel_count = -1
 			else:
 				for kraken_user in kraken_users.json()['users']:
@@ -147,7 +147,7 @@ class TwitchLogger:
 				params={'user_id': chunk, 'first': 100}, headers=self.headers)
 			self.bot.log.debug(helix_streams.url)
 			if helix_streams.status_code != 200:
-				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=helix_streams))
+				self.bot.log.error('https://api.twitch.tv/helix/streams - {r.status_code}\n{r.text}'.format(r=helix_streams))
 				self.channel_count = -1
 			else:
 				for helix_stream in helix_streams.json()['data']:
@@ -171,7 +171,7 @@ class TwitchLogger:
 				params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
 			self.bot.log.debug(kraken_streams.url)
 			if kraken_streams.status_code != 200:
-				self.bot.log.error('{r.url} - {r.status_code}\n{r.text}'.format(r=kraken_streams))
+				self.bot.log.error('https://api.twitch.tv/kraken/streams - {r.status_code}\n{r.text}'.format(r=kraken_streams))
 				self.channel_count = -1
 			else:
 				for kraken_stream in kraken_streams.json()['streams']:

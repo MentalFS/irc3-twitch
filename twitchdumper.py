@@ -23,6 +23,13 @@ Usage::
 	... })
 	>>> bot.include('twitchdumper')
 
+Configuration::
+	>>> [twitchdumper]
+	... client-id=<Client ID> (mandatory)
+	... client-secret=<Client Secret> (mandatory)
+	... chunk-size=<Maximum channels per request> (optional)
+	... filename=<Path like in other log modules>
+
 
 Available handlers:
 
@@ -97,6 +104,7 @@ def poll_user(bot):
 
 @cron('* * * * *')
 def poll_stream(bot):
+	bot.check_token(60)
 	bot.poll_stream()
 
 
@@ -220,17 +228,56 @@ class TwitchLogger:
 		handler = irc3.utils.maybedotted(self.config.get('handler', file_handler))
 		self.bot.log.debug('Handler: %s', handler.__name__)
 		self.process = handler(bot)
+
 		config = {
 			'chunk-size': 99,
 			'client-id': '1u66z1u96b69spbutvthgach2rbcd0',
+			'client-secret': None,
 		}
 		config.update(bot.config.get(__name__, {}))
 		self.chunkSize = min(100, max(1, config['chunk-size']))
+		self.api_token = None
+		self.api_token_ttl = -1
+		self.client_id = config['client-id']
+		self.client_secret = config['client-secret']
+
 		self.headers = {
 			'Client-ID': config['client-id'],
 			'Accept': 'application/vnd.twitchtv.v5+json',
 		}
+
 		self.connection_made()
+
+	@irc3.extend
+	def check_token(self, time):
+		if not self.client_secret:
+			if not time:
+				self.bot.log.warn('No client secret set - API access might be rejected!')
+			return
+		self.api_token_ttl = self.api_token_ttl  - 2 * time # refresh after half of the TTL
+		if self.api_token_ttl > 0:
+			self.bot.log.debug('API token TTL: %d' % self.api_token_ttl)
+			return
+
+		try:
+			token = requests.post('https://id.twitch.tv/oauth2/token',
+				params={'client_id': self.client_id, 'client_secret': self.client_secret, 'grant_type': 'client_credentials'})
+			self.bot.log.debug(token.url)
+			if token.status_code != 200:
+				self.bot.log.error('https://id.twitch.tv/oauth2/token - {r.status_code}\n{r.text}'.format(r=token))
+				self.channel_count = -1
+			else:
+				data = token.json()
+				self.api_token = data['access_token']
+				self.api_token_ttl = data['expires_in']
+
+				self.headers['Authorization'] = 'Bearer %s' % self.api_token
+
+				self.bot.log.info('Refreshed API token')
+
+		except Exception as e:
+			self.bot.log.exception(e)
+			self.channel_count = -1
 
 	@irc3.extend
 	def poll_user(self):
@@ -252,3 +299,4 @@ class TwitchLogger:
 
 	def connection_made(self):
 		self.channel_count = -1
+		self.check_token(0)

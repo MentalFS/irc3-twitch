@@ -13,7 +13,6 @@
 - add reload capability
 
 ### twitchdumper.py
-- prepare for termination of `kraken` API
 - log or insert more data (game info, metadata)
 - look for more `helix` data (tags, followers)
 

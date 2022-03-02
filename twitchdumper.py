@@ -130,21 +130,6 @@ class TwitchLogger:
 						del helix_user['view_count']
 					self.process(api='helix', endpoint='user',
 						channelname=helix_user['login'], data=helix_user, delta=delta)
-
-			kraken_users = requests.get('https://api.twitch.tv/kraken/users',
-				params={'id': ','.join(chunk)}, headers=self.headers)
-			self.bot.log.debug(kraken_users.url)
-			if kraken_users.status_code != 200:
-				self.bot.log.error('https://api.twitch.tv/kraken/users - {r.status_code}\n{r.text}'.format(r=kraken_users))
-				self.channel_count = -1
-			else:
-				for kraken_user in kraken_users.json()['users']:
-					delta = {}
-					if 'updated_at' in kraken_user:
-						delta['updated_at'] = kraken_user['updated_at']
-						del kraken_user['updated_at']
-					self.process(api='kraken', endpoint='user',
-						channelname=kraken_user['name'], data=kraken_user, delta=delta)
 		except Exception as e:
 			self.bot.log.exception(e)
 			self.channel_count = -1
@@ -174,49 +159,6 @@ class TwitchLogger:
 							del helix_stream['viewer_count']
 						self.process(api='helix', endpoint='stream',
 							channelname=channelname, data=helix_stream, delta=delta)
-
-			kraken_streams = requests.get('https://api.twitch.tv/kraken/streams',
-				params={'channel': ','.join(chunk), 'limit': 100}, headers=self.headers)
-			self.bot.log.debug(kraken_streams.url)
-			if kraken_streams.status_code != 200:
-				self.bot.log.error('https://api.twitch.tv/kraken/streams - {r.status_code}\n{r.text}'.format(r=kraken_streams))
-				self.channel_count = -1
-			else:
-				for kraken_stream in kraken_streams.json()['streams']:
-					channelname = kraken_stream['channel']['name']
-					if 'channel' in kraken_stream:
-						if 'logo' in kraken_stream['channel']:
-							del kraken_stream['channel']['logo']
-						if 'description' in kraken_stream['channel']:
-							del kraken_stream['channel']['description']
-						if 'profile_banner' in kraken_stream['channel']:
-							del kraken_stream['channel']['profile_banner']
-						if 'profile_banner_background_color' in kraken_stream['channel']:
-							del kraken_stream['channel']['profile_banner_background_color']
-						if 'updated_at' in kraken_stream['channel']:
-							del kraken_stream['channel']['updated_at']
-						if 'video_banner' in kraken_stream['channel']:
-							del kraken_stream['channel']['video_banner']
-					if 'community_id' in kraken_stream: del kraken_stream['community_id']
-					if 'community_ids' in kraken_stream: del kraken_stream['community_ids']
-					if 'preview' in kraken_stream: del kraken_stream['preview']
-					delta = {}
-					if 'average_fps' in kraken_stream:
-						delta['average_fps'] = kraken_stream['average_fps']
-						del kraken_stream['average_fps']
-					if 'viewers' in kraken_stream:
-						delta['viewers'] = kraken_stream['viewers']
-						del kraken_stream['viewers']
-					if 'channel' in kraken_stream:
-						delta['channel'] = {}
-						if 'followers' in kraken_stream['channel']:
-							delta['channel']['followers'] = kraken_stream['channel']['followers']
-							del kraken_stream['channel']['followers']
-						if 'views' in kraken_stream['channel']:
-							delta['channel']['views'] = kraken_stream['channel']['views']
-							del kraken_stream['channel']['views']
-					self.process(api='kraken', endpoint='stream',
-						channelname=channelname, data=kraken_stream, delta=delta)
 		except Exception as e:
 			self.bot.log.exception(e)
 			self.channel_count = -1

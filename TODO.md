@@ -17,13 +17,15 @@
 ### twitch.py
 - add reload capability
 - move token maintenance here
-- centralize checks for streams/users and make them events or pollable
+- centralize checks for streams/users and make them events (as own plugins)
 - repeat outgoing NOTICE as PRIVMSG or CTCP ACTION to make built in commands work
 
 ## other plugin ideas
-- check if channels become partner/affiliate with webhook
-- periodically call /mods and /vips
 - autojoin all followed channels
+- check if channels become partner/affiliate and send notification to webhook or channel
+- autojoin followed channels when they stream
+- autopart channels after they stop streaming for a set duration (except bot.autojoins)
+- periodically call /mods and /vips (won't work with anonymous user)
 
 ## general
 - configure logfiles

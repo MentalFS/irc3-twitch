@@ -191,12 +191,11 @@ class TwitchLogger:
 		self.connection_made()
 
 	@irc3.extend
-	def check_token(self, time):
+	def check_token(self, seconds_passed):
 		if not self.client_secret:
-			if not time:
-				self.bot.log.warn('No client secret set - API access might be rejected!')
+			self.bot.log.warn('No client secret set - API access might be rejected!')
 			return
-		self.api_token_ttl = self.api_token_ttl  - 2 * time # refresh after half of the TTL
+		self.api_token_ttl = self.api_token_ttl  - 2 * seconds_passed # refresh after half of the TTL
 		if self.api_token_ttl > 0:
 			self.bot.log.debug('API token TTL: %d' % self.api_token_ttl)
 			return

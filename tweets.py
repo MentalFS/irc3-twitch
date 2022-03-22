@@ -176,17 +176,16 @@ class Tweets:
 			if self.webhook_avatar:
 				message['avatar_url'] = self.webhook_avatar
 
-			#text_message = {
-			#	'description': text,
-			#	'url': url,
-			#	'title': '@%s' % screen_name,
-			#	'color': 33972, #alternative: 44269
-			#	'thumbnail': {
-			#		'url': tweet['user']['profile_image_url_https']
-			#	}
-			#}
-			#message['embeds'].append(text_message)
-			message['content'] = url
+			text_message = {
+				'description': text,
+				'url': url,
+				'title': '@%s' % screen_name,
+				'color': 33972, #alternative: 44269
+				'thumbnail': {
+					'url': tweet['user']['profile_image_url_https']
+				}
+			}
+			message['embeds'].append(text_message)
 
 			# Look for the best place to get media
 			media_base = tweet
@@ -199,7 +198,11 @@ class Tweets:
 				media = media_base['entities']['media']
 
 			for medium in media:
-				media_message = {'url': url }
+				media_message = text_message
+				if 'image' in text_message or 'video' in text_message:
+					media_message = {'url': url}
+					message['embeds'].append(media_message)
+
 				if 'media_url' in medium:
 					media_message['image'] = { 'url': medium['media_url'] }
 				if 'media_url_https' in medium:
@@ -217,8 +220,8 @@ class Tweets:
 						media_message['footer'] = {'text': '🎞️ Video'}
 					else:
 						media_message['footer'] = {'text': '🎞️ ?'}
-				message['embeds'].append(media_message)
 
+			#self.bot.log.debug(json.dumps(message))
 			reply = requests.post(webhook, json=message)
 			if reply.status_code != 204:
 				self.bot.log.info(webhook)

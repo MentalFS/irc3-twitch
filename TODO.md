@@ -4,30 +4,39 @@
 
 ### tweets.py
 - add reload capability
-- command to post a status to a channel and/or webhook without filtering
-- account-specific formats
-- extend URLs, check markdown format for Discord
-- handle the same Twitter account configured multiple times
+- BUG: a Twitter account can't be configured twice (with diferent filters and webhooks for example)
+- command to process a specific tweet without filtering
 
 ### rawlogger.py
 - add reload capability
 
 ### twitchdumper.py
+- add reload capability
+- rename to streamlogger or twitchlogger
+- only write user.log when streaming (and at stream start) OR OMIT USER.LOG
 - log or insert more data (game info, metadata)
 - look for more `helix` data (tags, followers)
 
 ### twitch.py
-- Check: Translating outgoing notices to messages by listening on the event
-- unify twitch api calls and move them here as events
-- override `IrcConnection`: whisper/notice/query translation for commands, readable chatroom names.
+- add reload capability
+- make membership and commands capacity optional
+- move token maintenance here
+- offer shortcut methods for requests with cachable results
+- centralize checks for streams and make them events
+- repeat outgoing NOTICE as PRIVMSG or CTCP ACTION to make built in commands work
+- or override `IrcConnection: whisper/notice/query translation for commands
 
 ## other plugin ideas
-- autojoin all followed channels (autopart? exceptions?)
-- autoreply on certain messages with short delay and data from tags
-- call webhooks or external programs on messages or events
-- typical Twitch bot functionality as plugins (custom commands, moderation, loyalty points & games)
+- check if channels become partner/affiliate with webhook
+- periodically call /mods and /vips
+- autojoin all followed channels
+- autojoin followed channels when they stream
+- autopart offline channels (not the autojoins, with timeout)
+- autojoin channels from list when they stream
+- autojoin raided or hosted channels (with restrictions)
 
 ## general
+- configure logfiles
 - better documentation/examples
 - restructure project to look more Python-esque
 - some kind of testing might be nice

@@ -176,16 +176,17 @@ class Tweets:
 			if self.webhook_avatar:
 				message['avatar_url'] = self.webhook_avatar
 
-			text_message = {
-				'description': text,
-				'url': url,
-				'title': '@%s' % screen_name,
-				'color': 33972, #alternative: 44269
-				'thumbnail': {
-					'url': tweet['user']['profile_image_url_https']
-				}
-			}
-			message['embeds'].append(text_message)
+			#text_message = {
+			#	'description': text,
+			#	'url': url,
+			#	'title': '@%s' % screen_name,
+			#	'color': 33972, #alternative: 44269
+			#	'thumbnail': {
+			#		'url': tweet['user']['profile_image_url_https']
+			#	}
+			#}
+			#message['embeds'].append(text_message)
+			message['content'] = url
 
 			# Look for the best place to get media
 			media_base = tweet

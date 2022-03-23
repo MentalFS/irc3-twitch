@@ -18,7 +18,7 @@ class Twitch:
 		self.bot.twitch = self.access
 
 	def connection_made(self):
-		#self.bot.send('CAP REQ :twitch.tv/membership')
+		self.bot.send('CAP REQ :twitch.tv/membership')
 		self.bot.send('CAP REQ :twitch.tv/tags')
 		self.bot.send('CAP REQ :twitch.tv/commands')
 		self.access.channels = {}
@@ -34,11 +34,10 @@ class Twitch:
 	@irc3.event('(@\S+ )?PART #(?P<channelname>\S+)( :.*)?', iotype='out')
 	def on_part_channel(self, channelname):
 		self.bot.log.debug('TWITCH PART: #%s' % channelname)
-		#self.access.channels = { k:v for k, v in self.access.channels.items() if v != channelname }
 		if channelname in self.access.users:
 			id = self.access.users[channelname]
 			del self.access.users[channelname]
-			if id in self.access.channels:
+			if id in self.access.channels and self.access.channels[id] == channelname:
 				del self.access.channels[id]
 
 	@irc3.event('(@\S+ )?:(?P<nickname>\S+)!\S+ PART #(?P<channelname>\S+)( :.*)?', iotype='in')

@@ -12,7 +12,6 @@
 ### twitchdumper.py
 - add reload capability
 - rename to streamlogger or twitchlogger
-- consider removing user.log or only writing when stream is active
 
 ### twitch.py
 - add reload capability
@@ -23,9 +22,6 @@
 ## other plugin ideas
 - autojoin all followed channels
 - check if channels become partner/affiliate and send notification to webhook or channel
-- autojoin followed channels when they stream
-- autopart channels after they stop streaming for a set duration (except bot.autojoins)
-- periodically call /mods and /vips (won't work with anonymous user)
 
 ## general
 - configure logfiles

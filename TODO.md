@@ -16,6 +16,7 @@
 ## other plugin ideas
 - autojoin all followed channels
 - check if channels become partner/affiliate and send notification to webhook or channel
+- Marbles on Stream autoplayer
 - replace twitchdumper.py with database plugin (sqlite files per channel/month)
   - only save meaningful fields, split out volatile data, save end of stream timestamp
   - provide migration path from old files

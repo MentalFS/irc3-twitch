@@ -1,6 +1,8 @@
-/__pycache__
-/logs/
-*.ini
+__pycache__
+
+/*.ini
+logs/
 
 *.sw?
+.idea
 

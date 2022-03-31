@@ -130,9 +130,6 @@ class TwitchLogger:
 				self.bot.log.error('https://api.twitch.tv/helix/users - {r.status_code}\n{r.text}'.format(r=helix_users))
 				self.channel_count = -1
 			else:
-				if not helix_users.json()['data']:
-					self.bot.log.warn('No data in %s', helix_users.url)
-					self.bot.log.debug(helix_users.text)
 				for helix_user in helix_users.json()['data']:
 					delta = {}
 					if 'view_count' in helix_user:
@@ -154,9 +151,6 @@ class TwitchLogger:
 				self.bot.log.error('https://api.twitch.tv/helix/streams - {r.status_code}\n{r.text}'.format(r=helix_streams))
 				self.channel_count = -1
 			else:
-				if not helix_streams.json()['data']:
-					self.bot.log.warn('No data in %s', helix_streams.url)
-					self.bot.log.debug(helix_streams.text)
 				for helix_stream in helix_streams.json()['data']:
 					channelname = self.bot.twitch.channels[helix_stream['user_id']]
 
@@ -190,7 +184,7 @@ class TwitchLogger:
 			'client-secret': None,
 		}
 		config.update(bot.config.get(__name__, {}))
-		self.chunkSize = min(100, max(1, config['chunk-size']))
+		self.chunk_size = min(100, max(1, config['chunk-size']))
 		self.api_token = None
 		self.api_token_ttl = -1
 		self.client_id = config['client-id']
@@ -249,7 +243,7 @@ class TwitchLogger:
 			self.bot.log.info('Polling %d channels' % channel_count)
 			self.channel_count = channel_count
 		channels = list(self.bot.twitch.channels.keys())
-		return [channels[i:i+self.chunkSize] for i in range(0, len(channels), self.chunkSize)]
+		return [channels[i:i+self.chunk_size] for i in range(0, len(channels), self.chunk_size)]
 
 	def connection_made(self):
 		self.channel_count = -1

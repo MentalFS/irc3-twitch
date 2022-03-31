@@ -1,9 +1,16 @@
 # -*- coding: utf-8 -*-
-import irc3, requests, threading, json
-import os, logging, codecs, pytz, collections
+import codecs
+import collections
+import json
+import os
+import threading
+from datetime import datetime
+
+import irc3
+import requests
 from irc3.plugins.cron import cron
 from tzlocal import get_localzone
-from datetime import datetime
+
 __doc__ = '''
 ==============================================
 :mod:`twitchdumper.py` Twitch statistics plugin
@@ -123,11 +130,15 @@ class TwitchLogger:
 				self.bot.log.error('https://api.twitch.tv/helix/users - {r.status_code}\n{r.text}'.format(r=helix_users))
 				self.channel_count = -1
 			else:
+				if not helix_users.json()['data']:
+					self.bot.log.warn('No data in %s', helix_users.url)
+					self.bot.log.debug(helix_users.text)
 				for helix_user in helix_users.json()['data']:
 					delta = {}
 					if 'view_count' in helix_user:
 						delta['view_count'] = helix_user['view_count']
 						del helix_user['view_count']
+
 					self.process(api='helix', endpoint='user',
 						channelname=helix_user['login'], data=helix_user, delta=delta)
 		except Exception as e:
@@ -143,22 +154,24 @@ class TwitchLogger:
 				self.bot.log.error('https://api.twitch.tv/helix/streams - {r.status_code}\n{r.text}'.format(r=helix_streams))
 				self.channel_count = -1
 			else:
+				if not helix_streams.json()['data']:
+					self.bot.log.warn('No data in %s', helix_streams.url)
+					self.bot.log.debug(helix_streams.text)
 				for helix_stream in helix_streams.json()['data']:
 					channelname = self.bot.twitch.channels[helix_stream['user_id']]
-					if not channelname:
-						self.bot.log.bot.error('unassignable: %s' % json.dumps(helix_stream))
-						self.channel_count = -1
-					else:
-						if 'community_ids' in helix_stream: del helix_stream['community_ids']
-						if 'tag_ids' in helix_stream and isinstance(helix_stream['tag_ids'], list):
-							helix_stream['tag_ids'].sort()
-						if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
-						delta = {}
-						if 'viewer_count' in helix_stream:
-							delta['viewer_count'] = helix_stream['viewer_count']
-							del helix_stream['viewer_count']
-						self.process(api='helix', endpoint='stream',
-							channelname=channelname, data=helix_stream, delta=delta)
+
+					if 'community_ids' in helix_stream: del helix_stream['community_ids']
+					if 'tag_ids' in helix_stream and isinstance(helix_stream['tag_ids'], list):
+						helix_stream['tag_ids'].sort()
+					if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
+
+					delta = {}
+					if 'viewer_count' in helix_stream:
+						delta['viewer_count'] = helix_stream['viewer_count']
+						del helix_stream['viewer_count']
+
+					self.process(api='helix', endpoint='stream',
+						channelname=channelname, data=helix_stream, delta=delta)
 		except Exception as e:
 			self.bot.log.exception(e)
 			self.channel_count = -1
@@ -168,7 +181,7 @@ class TwitchLogger:
 		self.bot = bot
 		self.config = bot.config.get(__name__, {})
 		handler = irc3.utils.maybedotted(self.config.get('handler', file_handler))
-		self.bot.log.debug('Handler: %s', handler.__name__)
+		self.bot.log.debug('%s Handler: %s %s', self.__module__, handler.__module__, handler.__name__)
 		self.process = handler(bot)
 
 		config = {

@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
-import irc3
-import os, logging, codecs, pytz
-from tzlocal import get_localzone
+import codecs
+import os
 from datetime import datetime
+
+import irc3
 from irc3.utils import as_list
+from tzlocal import get_localzone
+
 __doc__ = '''
 =============================================
 :mod:`rawlogger.py` Channel raw logger plugin
@@ -75,7 +78,7 @@ class RawLogger:
 		self.config = bot.config.get(__name__, {})
 
 		handler = irc3.utils.maybedotted(self.config.get('handler', file_handler))
-		self.bot.log.debug('Handler: %s', handler.__name__)
+		self.bot.log.debug('%s Handler: %s %s', self.__module__, handler.__module__, handler.__name__)
 		self.handler = handler(bot)
 
 		self.message_filters = []

@@ -1,19 +1,19 @@
-# Wait for release 1.1.8
 FROM python:3.9-alpine
-#FROM python:alpine
+#FROM python:alpine -- Wait for irc3 1.1.8 or higher
 
-RUN addgroup --system irc3 \
-    && adduser --system --ingroup irc3 irc3 \
-    && mkdir /data \
-    && chown irc3:irc3 /data
+ENV LANG=C.UTF-8
+ENV TZ=Europe/Berlin
 
 WORKDIR irc3
-COPY ./requirements.txt .
+COPY ./requirements.txt ./
 RUN pip install -r requirements.txt
-COPY *.py .
+COPY *.py ./
+RUN python -m compileall ./
 
-USER irc3
-ENV IRC3_CONFIG=config.ini
-ARG IRC3_ARGS="--logdate"
-ENTRYPOINT irc3 ${IRC3_ARGS} /data/${IRC3_CONFIG}
+RUN mkdir -p /data/logs && chown 1000:1000 /data -R
+RUN ln -s /data/config.ini && ln -s /data/logs/
+USER 1000
 VOLUME /data
+
+ENV IRC3_LOGGING="--logdate"
+ENTRYPOINT irc3 "${IRC3_LOGGING}" config.ini

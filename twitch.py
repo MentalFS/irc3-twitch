@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from irc3.plugins.command import Commands
 import irc3
+from irc3.plugins.command import Commands
+
 
 class Access(object):
 	bot = None

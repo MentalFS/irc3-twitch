@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
-import irc3, asyncio, venusian
-import threading, html, time
-import requests, json
+import html
+import threading
+import time
+
+import irc3
+import json
+import requests
+from irc3.plugins.command import command
 from irc3.utils import as_list
 from twitter.stream import Timeout, HeartbeatTimeout, Hangup
-from irc3.plugins.command import command
 
 __doc__ = '''
 ==========================================
@@ -102,7 +106,7 @@ class Tweets:
 
 	def handle_data(self, data):
 		if data is None:
-			 self.bot.log.info('Twitter sent no data')
+			self.bot.log.info('Twitter sent no data')
 		elif data is Timeout:
 			self.bot.log.info('Twitter sent a timeout')
 		elif data is Hangup:

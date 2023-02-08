@@ -119,14 +119,14 @@ class Tweets:
 			delete_user = data['delete']['status']['user_id_str']
 			if delete_user in self.twitter_ids:
 				delete_user = '@%s' % self.twitter_ids[delete_user]
-			self.bot.log.debug('Twitter sent deletion %s/%s' % (delete_user, data['delete']['status']['id_str']))
+			self.bot.log.warn('Twitter sent deletion: https://twitter.com/%s/status/%s' % (delete_user, data['delete']['status']['id_str']))
 		elif 'limit' in data:
 			self.bot.log.critical('Twitter sent LIMIT NOTICE')
 			self.bot.log.info(json.dumps(data))
 		elif 'text' in data:
-			self.bot.log.debug('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
+			self.bot.log.info('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
 			self.handle_tweet(data)
-			#self.bot.log.debug(json.dumps(data))
+			self.bot.log.info(json.dumps(data))
 		else:
 			self.bot.log.warn('Twitter sent unknown data')
 			self.bot.log.info(json.dumps(data))
@@ -139,16 +139,6 @@ class Tweets:
 			if 'extended_tweet' in tweet and 'full_text' in tweet['extended_tweet']:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
 			user = tweet['user']['screen_name'].lower()
-
-			if 'quoted_status' in tweet:
-				self.bot.log.info('Quoted retweet')
-				self.bot.log.info(json.dumps(data))
-				quoted = tweet['quoted_status']
-				if 'id_str' in quoted and 'user' in quoted and 'screen_name' in quoted['user']:
-					text = '%s 💬https://twitter.com/%s/status/%s' % (text, quoted['user']['screen_name'], quoted['id_str'])
-				else:
-					self.bot.log.warn('Unexpected quote tweet data')
-					self.bot.log.warn(json.dumps(data))
 
 			user_tweet = (user in self.twitter_channels or user in self.twitter_webhooks)  \
 				and (tweet['in_reply_to_screen_name'] == None or tweet['in_reply_to_screen_name'].lower() == user) \

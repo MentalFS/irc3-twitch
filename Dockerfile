@@ -1,12 +1,11 @@
-FROM python:3.9-alpine
-#FROM python:alpine -- Wait for irc3 1.1.8 or higher
+FROM python:3-alpine
 
 ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
 
 WORKDIR irc3
 COPY ./requirements.txt ./
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 COPY *.py ./
 RUN python -m compileall ./
 

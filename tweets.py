@@ -115,18 +115,19 @@ class Tweets:
 			self.bot.log.info('Twitter sent a heartbeat timeout')
 		elif 'retweeted_status' in data:
 			self.bot.log.debug('Twitter sent retweet %s' % data['id_str'])
+		elif 'quoted_status' in data:
+			self.bot.log.debug('Twitter sent quoted tweet %s' % data['id_str'])
 		elif 'delete' in data:
 			delete_user = data['delete']['status']['user_id_str']
 			if delete_user in self.twitter_ids:
 				delete_user = '@%s' % self.twitter_ids[delete_user]
-			self.bot.log.warn('Twitter sent deletion: https://twitter.com/%s/status/%s' % (delete_user, data['delete']['status']['id_str']))
+			self.bot.log.info('Twitter sent deletion: https://twitter.com/%s/status/%s' % (delete_user, data['delete']['status']['id_str']))
 		elif 'limit' in data:
 			self.bot.log.critical('Twitter sent LIMIT NOTICE')
 			self.bot.log.info(json.dumps(data))
 		elif 'text' in data:
-			self.bot.log.info('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
+			self.bot.log.debug('Twitter sent tweet @%s/%s' % (data['user']['screen_name'], data['id_str']) )
 			self.handle_tweet(data)
-			self.bot.log.info(json.dumps(data))
 		else:
 			self.bot.log.warn('Twitter sent unknown data')
 			self.bot.log.info(json.dumps(data))
@@ -166,10 +167,7 @@ class Tweets:
 		text_lower = text.lower()
 		for twitter_filter in self.twitter_filters[user]:
 			if twitter_filter.lower() in text_lower:
-				#self.bot.log.debug('FOUND FILTER: %s' % twitter_filter)
 				return False
-
-		#self.bot.log.debug('FILTERED: %s' % text)
 		return True
 
 	def send_webhook(self, webhook, screen_name, user_name, text, tweet, url):
@@ -225,7 +223,6 @@ class Tweets:
 					else:
 						media_message['footer'] = {'text': '🎞️ ?'}
 
-			#self.bot.log.debug(json.dumps(message))
 			reply = requests.post(webhook, json=message)
 			if reply.status_code != 204:
 				self.bot.log.info(webhook)
@@ -249,6 +246,6 @@ class Tweets:
 		self.bot.log.info('Fetching and handling tweet: %s' % status_id)
 		tweet = self.twitter_api.statuses.show(id=status_id, include_entities="true", tweet_mode="compability")
 		tweet['extended_tweet'] = self.twitter_api.statuses.show(id=status_id, include_entities="true", tweet_mode="extended")
-		self.bot.log.debug(json.dumps(tweet))
+		self.bot.log.info(json.dumps(tweet))
 		self.handle_tweet(tweet)
 		return 'Loaded and handled tweet: @%s/%s' % (tweet['user']['screen_name'], tweet['id_str'])

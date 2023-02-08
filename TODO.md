@@ -3,7 +3,6 @@
 ## Plugins
 
 ### tweets.py
-- handling quoted tweets better (embed in webhook)
 - a Twitter account can't be configured twice (with diferent filters and webhooks for example)
   - will require a larger refactoring
 - Delete this module if Space Karen actually kills the API

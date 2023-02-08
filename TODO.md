@@ -3,7 +3,10 @@
 ## Plugins
 
 ### tweets.py
-- BUG: a Twitter account can't be configured twice (with diferent filters and webhooks for example)
+- handling quoted tweets better (embed in webhook)
+- a Twitter account can't be configured twice (with diferent filters and webhooks for example)
+  - will require a larger refactoring
+- Delete this module if Space Karen actually kills the API
 
 ### twitchdumper.py
 - gather follower counts (currently missing in user info)

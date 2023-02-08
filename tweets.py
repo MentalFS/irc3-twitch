@@ -140,6 +140,16 @@ class Tweets:
 				text = html.unescape(tweet['extended_tweet']['full_text'])
 			user = tweet['user']['screen_name'].lower()
 
+			if 'quoted_status' in tweet:
+				self.bot.log.info('Quoted retweet')
+				self.bot.log.info(json.dumps(data))
+				quoted = tweet['quoted_status']
+				if 'id_str' in quoted and 'user' in quoted and 'screen_name' in quoted['user']:
+					text = '%s 💬https://twitter.com/%s/status/%s' % (text, quoted['user']['screen_name'], quoted['id_str'])
+				else:
+					self.bot.log.warn('Unexpected quote tweet data')
+					self.bot.log.warn(json.dumps(data))
+
 			user_tweet = (user in self.twitter_channels or user in self.twitter_webhooks)  \
 				and (tweet['in_reply_to_screen_name'] == None or tweet['in_reply_to_screen_name'].lower() == user) \
 				and (not text.startswith('@') or text.lower().startswith('@' + user)) \

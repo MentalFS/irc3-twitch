@@ -66,16 +66,20 @@ class Tweets:
 	def connect_twitter(self):
 		for config_key, config_value in self.config.items():
 			if config_value and str(config_key).endswith('.account'):
-				screen_name = config_value
-				details = self.twitter_api.users.show(screen_name=screen_name)
-				self.twitter_ids[details["id_str"]] = screen_name
+				try:
+					screen_name = config_value
+					details = self.twitter_api.users.show(screen_name=screen_name)
+					self.twitter_ids[details["id_str"]] = screen_name
 
-				self.twitter_channels[screen_name.lower()] = self.tweet_channels
-				config_id = config_key[:-8]
-				if self.config.get(config_id + '.channels'):
-					self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_id+'.channels'))
-				self.twitter_webhooks[screen_name.lower()] = self.config.get(config_id+'.webhook')
-				self.twitter_filters[screen_name.lower()] = as_list(self.config.get(config_id+'.filters'))
+					self.twitter_channels[screen_name.lower()] = self.tweet_channels
+					config_id = config_key[:-8]
+					if self.config.get(config_id + '.channels'):
+						self.twitter_channels[screen_name.lower()] = as_list(self.config.get(config_id+'.channels'))
+					self.twitter_webhooks[screen_name.lower()] = self.config.get(config_id+'.webhook')
+					self.twitter_filters[screen_name.lower()] = as_list(self.config.get(config_id+'.filters'))
+				except Exception as e:
+					self.bot.log.warn('Could not add: %s' % config_key)
+					self.bot.log.exception(e)
 
 		threading.Thread(target=self.receive_stream).start()
 

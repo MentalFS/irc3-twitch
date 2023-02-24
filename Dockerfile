@@ -1,18 +1,15 @@
 FROM python:3-alpine
 
+WORKDIR /opt/irc3
+RUN python -m venv /opt/venv
+COPY ./requirements.txt ./
+RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+COPY *.py ./
+RUN /opt/venv/bin/python -m compileall ./
+
 ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
-
-WORKDIR irc3
-COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
-COPY *.py ./
-RUN python -m compileall ./
-
-RUN mkdir -p /data/logs && chown 1000:1000 /data -R
-RUN ln -s /data/config.ini && ln -s /data/logs/
-USER 1000
-VOLUME /data
-
 ENV IRC3_LOGGING="--logdate"
-ENTRYPOINT irc3 "${IRC3_LOGGING}" config.ini
+ENV IRC3_CONFIG="/etc/irc3/config.ini"
+ENTRYPOINT /opt/venv/bin/python
+CMD irc3 "${IRC3_LOGGING}" "${IRC3_CONFIG}"

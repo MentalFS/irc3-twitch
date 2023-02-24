@@ -23,11 +23,12 @@ jobs:
       # https://github.com/twiddler/is-my-docker-parent-image-out-of-date
       # used to be https://github.com/lucacome/docker-image-update-checker
       - name: Check if update available
-        id: check
+       id: check
         uses: twiddler/is-my-docker-parent-image-out-of-date@v1
         with:
           parent-image: python:3-alpine
           my-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+        if: github.event_name == 'schedule'
 
       - name: Checkout repository
         uses: actions/checkout@v3

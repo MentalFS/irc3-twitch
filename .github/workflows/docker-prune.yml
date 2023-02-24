@@ -13,7 +13,7 @@ jobs:
       with:
         token: ${{ secrets.PACKAGE_DELETE_TOKEN }}
         user: mentalfs
-        container: irc3-plugins
+        container: irc3-twitch
         dry-run: false
         keep-younger-than: 7 # days
         keep-last: 2

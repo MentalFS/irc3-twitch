@@ -1,4 +1,4 @@
-NAME = irc3-bot
+NAME = irc3-twitch
 
 .PHONY: build build-pull pull release
 

@@ -26,3 +26,11 @@ Logs [JSON API requests](https://dev.twitch.tv/docs/api) about the Twitch channe
 
 ### irc3-bot
 A starter script that I use to keep IRC bots running via cron.
+
+## Docker
+
+### Example
+
+```
+docker run -d -v /local/path/to/my_config.ini:/opt/irc3/my_config.ini:ro -e IRC3_CONFIG=my_config.ini ghcr.io/mentalfs/irc3-twitch
+```

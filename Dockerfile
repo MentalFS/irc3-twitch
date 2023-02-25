@@ -9,5 +9,5 @@ RUN python -m compileall ./ ; irc3 --version
 ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
 ENV IRC3_LOGGING="--logdate"
-ENV IRC3_CONFIG="/etc/irc3/config.ini"
+ENV IRC3_CONFIG="config.ini"
 CMD irc3 "${IRC3_LOGGING}" "${IRC3_CONFIG}"

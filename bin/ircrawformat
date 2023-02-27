@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# OUTPUT SETTINGS
+F_PREFIX=P_DEFAULT
+F_OUTPUT=O_DEFAULT
+
+while [[ "$1" == -* ]] ; do
+	case "$1" in
+		"-a"|"--all")
+			F_OUTPUT=O_ALL
+			;;
+		"-b"|"--basic")
+			F_OUTPUT=O_BASIC
+			;;
+		"-e"|"--extended")
+			F_PREFIX=P_EXTENDED
+			;;
+		"-s"|"--short")
+			F_PREFIX=P_SHORT
+			;;
+		"--")
+			shift
+			break
+			;;
+		*)
+			echo "${0##*/}: UNKNOWN OPTION $1" >&2
+			exit 1
+			;;
+	esac
+	shift
+done
+
+#COLOR ESCAPES
+CR="\x1b[31m" #RED
+CY="\x1b[33m" #YELLOW
+CP="\x1b[95m" #PURPLE
+CB="\x1b[94m" #BLUE
+CG="\x1b[90m" #GREY
+RS="\x1b[39;49;00m" #DEFAULT
+
+# PREFIX VARIANTS
+P_DEFAULT="$CG[\2 $RS$CP\4$RS$CG]$RS"
+P_EXTENDED="$CG[\1 \2 $RS$CP\4$RS$CG]$RS"
+P_SHORT="$CG[\2]$RS"
+
+# PARSING
+R_PRIVMSG="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)\S* @\S*;display-name=\([^;]*\)\S* :\S* PRIVMSG #\(\S*\) :\x01ACTION \(.*\)\x01\s*$/${!F_PREFIX} $CY* \3$RS \5/p" #Print CTCP ACTION
+R_PRIVMSG="$R_PRIVMSG;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)\S* @\S*;display-name=\([^;]*\)\S* :\S* PRIVMSG #\(\S*\) :\(.*\)$/${!F_PREFIX} $CY<\3>$RS \5/p" #Print normal PRIVMSG
+
+R_NOTICE="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)\S* @*\S* *:\(\S*\) NOTICE #\(\S*\) :\(.*\S\)\s*$/${!F_PREFIX} $CB- \5 -$RS /p" #Print NOTICE
+
+R_USERNOTICE=":u;s/\(^[^T]*T[0-9][0-9]:[0-9][0-9][^ ]* @\S*;system-msg=[^;]*\)\\\\[sn]/\1 /g;tu" #Unescape spaces in USERNOTICE
+R_USERNOTICE="$R_USERNOTICE;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* @\S*;system-msg=\([^;]*\)[^ ]* :[^ ]* USERNOTICE #\(\S*\)[ :]*\(.*\)$/${!F_PREFIX} $CR- \3 -$RS \5/p" #Print USERNOTICE message
+
+R_CLEARCHAT="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* \(@\S*\) :[^ ]* CLEARCHAT #\(\S*\) :\(.*\S\)\s*$/CLEARCHAT ${!F_PREFIX} $CB- \5 was banned. -$RS \3/" #Reformat CLEARCHAT for better parsing
+R_CLEARCHAT="$R_CLEARCHAT;:c;s/^CLEARCHAT \(.* @\S*ban-reason=[^;]*\)\\\\[sn]/CLEARCHAT \1 /g;tc" #Unescape spaces in CLEARCHAT reason
+R_CLEARCHAT="$R_CLEARCHAT;s/^CLEARCHAT \(.*\) \(@\S*\)ban-reason=\([^;]*\)/CLEARCHAT \1 \3 \2/" #Extract CLEARCHAT reason
+R_CLEARCHAT="$R_CLEARCHAT;s/^CLEARCHAT \(.*\) was banned. \(.* @\S*\)ban-duration=\([^;]*\)/CLEARCHAT \1 was timed out for \3 seconds. \2/" #Extract timeout duration and alter message
+R_CLEARCHAT="$R_CLEARCHAT;s/^CLEARCHAT \(.*\) @\S*$/\1 /p" #Remove tags and print CLEARCHAT
+R_CLEARCHAT="$R_CLEARCHAT;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* \(@\S*\) :[^ ]* CLEARCHAT #\(\S*\)\s*$/${!F_PREFIX} $CB- The whole chat was cleared. -$RS /p" #Print whole chat CLEARCHAT
+
+R_CLEARMSG="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)\S* @\S*login=\([^;]*\)\S* :\S* CLEARMSG #\(\S*\) :\(.*\)$/${!F_PREFIX}  $CB- A message from \3 was deleted -$RS$CG \5 $RS/p"
+
+R_JOINPART="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* \(JOIN\) #\(\S*\)\s*$/${!F_PREFIX} $CG*** Joining channel. $RS/p" #print self JOIN
+R_JOINPART="$R_JOINPART;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* :\(\S*\)!\S* JOIN #\(\S*\)\s*$/${!F_PREFIX} $CG*** Joined: \3 $RS/p" #print JOIN
+R_JOINPART="$R_JOINPART;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* :\(\S*\)!\S* PART #\(\S*\)\s*$/${!F_PREFIX} $CG*** Left: \3 $RS/p" #print PART
+
+R_MODES="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* :\(\S*\) MODE #\(\S*\) \(.*\S\)\s*$/${!F_PREFIX} $CG*** Mode: \5 $RS/p" #print MODE changes
+R_MODES="$R_MODES;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* :\(\S*\) HOSTTARGET #\(\S*\) :- \(\S*\)\s*$/${!F_PREFIX} $CG*** Stopped hosting with \5 viewers $RS/p" #print HOSTTARGET stopping info
+R_MODES="$R_MODES;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* :\(\S*\) HOSTTARGET #\(\S*\) :\(\S*\) \(\S*\)\s*$/${!F_PREFIX} $CG*** Started hosting \5 with \6 viewers $RS/p" #print HOSTTARGET starting info
+R_MODES="$R_MODES;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* @\(\S*\) :\S* ROOMSTATE #\(\S*\)\s*$/ROOMSTATE ${!F_PREFIX} $CG*** Room state: [\3] $RS/" #reformat ROOMSTATE for better parsing
+R_MODES="$R_MODES;s/^ROOMSTATE \(.*broadcaster-lang=\)\(\W\)/ROOMSTATE \1-\2/" #Reformat some ROOMSTATE values
+R_MODES="$R_MODES;:rs;s/^ROOMSTATE \(.*\) \(\S*\)=\(\S*\);/ROOMSTATE \1 \2:\3][/g;trs;s/^ROOMSTATE \(.*\) \(\S*\)=\(\S*\) /ROOMSTATE \1 \2:\3 /" #reformat ROOMSTATE tags
+R_MODES="$R_MODES;s/^ROOMSTATE \(.*\)\s*$/\1 /p" #Remove prefix and print ROOMSTATE
+R_MODES="$R_MODES;s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)[^ ]* @\(\S*\) :\S* USERSTATE #\(\S*\)\s*$/USERSTATE ${!F_PREFIX} $CG*** User state: [\3] $RS/" #reformat USERSTATE for better parsing
+R_MODES="$R_MODES;s/^USERSTATE \(.*user-type=\)\(\W\)/USERSTATE \1-\2/" #Reformat some USERSTATE values
+R_MODES="$R_MODES;:us;s/^USERSTATE \(.*\) \(\S*\)=\(\S*\);/USERSTATE \1 \2:\3][/g;tus;s/^USERSTATE \(.*\) \(\S*\)=\(\S*\) /USERSTATE \1 \2:\3 /" #reformat USERSTATE tags
+R_MODES="$R_MODES;s/^USERSTATE \(.*\)\s*$/\1 /p" #Remove prefix and print USERSTATE
+
+R_UNPARSED="s/^\([^T]*\)T\([0-9][0-9]:[0-9][0-9]\)\S* \(\S* *\S* *\S*\) #\(\S*\)\(.*\)$/${!F_PREFIX} $CP[UNPARSED]$RS \3 #\4\5/p" #Print unparsed lines
+
+# OUTPUT VARIANTS
+O_DEFAULT="$R_PRIVMSG;$R_NOTICE;$R_USERNOTICE;$R_CLEARCHAT;$R_CLEARMSG"
+O_ALL="$R_PRIVMSG;$R_NOTICE;$R_USERNOTICE;$R_CLEARCHAT;$R_CLEARMSG;$R_JOINPART;$R_MODES;$R_UNPARSED"
+O_BASIC="$R_PRIVMSG;$R_USERNOTICE"
+
+sed -n "${!F_OUTPUT}" -- "$@"

@@ -7,10 +7,6 @@ They are mostly centered around usage on the [Twitch network](https://dev.twitch
 
 ## Plugins
 
-### tweets.py
-Connects to the [Twitter streaming API](https://developer.twitter.com/en/docs/tweets/filter-realtime/api-reference/post-statuses-filter) and posts new tweets of users into a definable set of channels. Also hat the capability to post to a [Discord Webhook](https://discordapp.com/developers/docs/resources/webhook).
-* Requires [twitter](https://pypi.org/project/twitter/) and [requests](https://pypi.org/project/requests/).
-
 ### rawlogger.py
 Logs messages (only to channels) as raw IRC lines to files.
 * Requires [tzlocal](https://pypi.org/project/tzlocal/) / [pytz](https://pypi.org/project/pytz/).

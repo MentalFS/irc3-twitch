@@ -34,9 +34,7 @@
   - https://docs.python.org/3/tutorial/inputoutput.html#the-string-format-method
 
 ## general
-- helper hooks for feeds.py:
-  - strip html from description
-  - whitelist filter by title or description
+- helper hooks for feeds.py to strip html from description
 - reorganize to a folder structure
 - cleanup or migration of old logs (before deltas were used)
 - tools to analyze `twitchdumper.py` logs

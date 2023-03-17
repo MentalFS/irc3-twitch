@@ -14,8 +14,6 @@ class Access(object):
 
 @irc3.plugin
 class Twitch:
-	requires = [Commands.__module__]
-
 	def __init__(self, bot):
 		self.bot = bot
 		self.access = Access(bot)
@@ -57,22 +55,14 @@ class Twitch:
 		self.bot.loop.call_soon(plugin.reconnect)
 
 
-	@irc3.event((r'(@(?P<tags>\S+) )?:(?P<mask>\S+) WHISPER (?P<target>\S+) '
-				 r':{re_cmd}(?P<cmd>[\w-]+)(\s+(?P<data>\S.*)|(\s*$))'))
-	def on_whisper_command(self, cmd, mask=None, target=None, client=None, **kw):
-		self.bot.log.debug('Received WHISPER COMMAND: %s' % cmd)
-		commands = self.bot.get_plugin(Commands)
-		commands.on_command(cmd, mask=mask, target=target, client=client, **kw)
-
 	@irc3.event('(@\S+ )?NOTICE (?P<target>\S+) :(?P<data>.*)', iotype='out')
 	def on_send_notice(self, target, data):
-		self.bot.log.debug('Repeated NOTICE as PRIVMSG: %s %s' % (target, data))
 		if target.startswith('#'):
 			self.bot.privmsg(target, data)
+			self.bot.log.debug('Repeated NOTICE as PRIVMSG: %s %s' % (target, data))
 		else:
-			self.bot.privmsg('#%s' % target, "/w %s %s" % (target, data))
+			self.bot.log.warn('Unsupported NOTICE target: %s %s' % (target, data))
 
 	@irc3.event('(@\S+ )?PRIVMSG (?P<user>[^#]\S+) :(?P<data>.*)', iotype='out')
 	def on_send_whisper(self, user, data):
-		self.bot.log.debug('Repeated PRIVMSG as WHISPER: /w %s %s' % (user, data))
-		self.bot.privmsg('#%s' % user, "/w %s %s" % (user, data))
+		self.bot.log.warn('PRIVMSG to user not supported: %s %s' % (user, data))

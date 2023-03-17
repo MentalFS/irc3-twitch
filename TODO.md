@@ -3,9 +3,10 @@
 ## twitchdumper.py
 - gather follower counts (currently missing in user info)
 - `view_count` is deprecated: https://discuss.dev.twitch.tv/t/get-users-api-endpoint-view-count-deprecation/37777
+- detect missing users in responses
 - dont write anything when nothing was changed on user endpoint
   - then increase user poll interval to every 10 minutes
-- split up into modules per endpoint (user, stream, follows?)
+- maybe split up into modules per endpoint (user, stream, follows?)
 - consider switching to sqlite databases per user/month
   - in a test phase parallel to file logging
   - dynamically add new fields and search for a way to store only deltas
@@ -13,11 +14,10 @@
 
 ## twitch.py
 - command guard based on mod/vip/sub
-- move token maintenance here
 - provide requests session (see session in feeds.py or search.py)
   - https://stackoverflow.com/questions/42601812/python-requests-url-base-in-session
+- move token maintenance here
 - move pulling of stream/user info here
-- reorganize to a folder structure
 
 ## other ideas
 - autojoin all followed channels
@@ -33,6 +33,10 @@
   - optional storage.py support with configuration commands (guarded)
   - https://docs.python.org/3/tutorial/inputoutput.html#the-string-format-method
 
-## tools
+## general
+- helper hooks for feeds.py:
+  - strip html from description
+  - whitelist filter by title or description
+- reorganize to a folder structure
 - cleanup or migration of old logs (before deltas were used)
 - tools to analyze `twitchdumper.py` logs

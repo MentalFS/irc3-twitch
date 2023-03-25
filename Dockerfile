@@ -4,7 +4,7 @@ WORKDIR /opt/irc3
 COPY ./requirements.txt ./
 RUN PIP_ROOT_USER_ACTION=ignore pip install --no-cache-dir -r requirements.txt
 COPY *.py ./
-RUN python -m compileall ./ ; irc3 --version ; mkdir cache ; chmod a+rw cache
+RUN python -m compileall ./ && irc3 --version && mkdir cache && chmod a+rw cache
 
 ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin

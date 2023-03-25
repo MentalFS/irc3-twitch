@@ -123,7 +123,7 @@ class TwitchLogger:
 	def poll_user_chunk(self, *chunk):
 		try:
 			helix_users = requests.get('https://api.twitch.tv/helix/users',
-				params={'id': chunk}, headers=self.headers)
+				params={'id': chunk}, headers=self.headers, timeout=30)
 			self.bot.log.debug(helix_users.url)
 
 			if helix_users.status_code != 200:
@@ -139,13 +139,13 @@ class TwitchLogger:
 					self.process(api='helix', endpoint='user',
 						channelname=helix_user['login'], data=helix_user, delta=delta)
 		except Exception as e:
-			self.bot.log.exception(e)
+			self.bot.log.error(e, stack_info=self.channel_count<0)
 			self.channel_count = -1
 
 	def poll_stream_chunk(self, *chunk):
 		try:
 			helix_streams = requests.get('https://api.twitch.tv/helix/streams',
-				params={'user_id': chunk, 'first': 100}, headers=self.headers)
+				params={'user_id': chunk, 'first': 100}, headers=self.headers, timeout=30)
 			self.bot.log.debug(helix_streams.url)
 			if helix_streams.status_code != 200:
 				self.bot.log.error('https://api.twitch.tv/helix/streams - {r.status_code}\n{r.text}'.format(r=helix_streams))
@@ -167,7 +167,7 @@ class TwitchLogger:
 					self.process(api='helix', endpoint='stream',
 						channelname=channelname, data=helix_stream, delta=delta)
 		except Exception as e:
-			self.bot.log.exception(e)
+			self.bot.log.error(e, stack_info=self.channel_count<0)
 			self.channel_count = -1
 
 
@@ -208,7 +208,7 @@ class TwitchLogger:
 			return
 
 		try:
-			token = requests.post('https://id.twitch.tv/oauth2/token',
+			token = requests.post('https://id.twitch.tv/oauth2/token', timeout=30,
 				params={'client_id': self.client_id, 'client_secret': self.client_secret, 'grant_type': 'client_credentials'})
 			self.bot.log.debug(token.url)
 			if token.status_code != 200:
@@ -224,7 +224,7 @@ class TwitchLogger:
 				self.bot.log.info('Refreshed API token')
 
 		except Exception as e:
-			self.bot.log.exception(e)
+			self.bot.log.error(e, stack_info=self.channel_count<0)
 			self.channel_count = -1
 
 	@irc3.extend

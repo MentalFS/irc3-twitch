@@ -1,8 +1,6 @@
 name: Docker Publish
 
 on:
-  schedule:
-    - cron: '15 17 * * *'
   push:
     branches: [ "main" ]
 
@@ -19,25 +17,12 @@ jobs:
       packages: write
 
     steps:
-      # Check for update of base image
-      # https://github.com/twiddler/is-my-docker-parent-image-out-of-date
-      # used to be https://github.com/lucacome/docker-image-update-checker
-      - name: Check if update available
-        id: check
-        uses: twiddler/is-my-docker-parent-image-out-of-date@v1
-        with:
-          parent-image: python:3-alpine
-          my-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
-        if: github.event_name == 'schedule'
-
       - name: Checkout repository
         uses: actions/checkout@v3
-        if: github.event_name == 'push' || steps.check.outputs.out-of-date == 'true'
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v2
-        if: github.event_name == 'push' || steps.check.outputs.out-of-date == 'true'
 
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
@@ -47,7 +32,6 @@ jobs:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-        if: github.event_name == 'push' || steps.check.outputs.out-of-date == 'true'
 
       # Extract metadata (tags, labels) for Docker
       # https://github.com/docker/metadata-action
@@ -56,9 +40,8 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        if: github.event_name == 'push' || steps.check.outputs.out-of-date == 'true'
 
-     # Build and push Docker image with Buildx
+      # Build and push Docker image with Buildx
       # https://github.com/docker/build-push-action
       - name: Build and push Docker image
         id: build-and-push
@@ -70,4 +53,3 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           push: true
-        if: github.event_name == 'push' || steps.check.outputs.out-of-date == 'true'

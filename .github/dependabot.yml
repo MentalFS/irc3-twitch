@@ -5,18 +5,19 @@
 
 version: 2
 updates:
-  - package-ecosystem: github-actions
+  - package-ecosystem: "github-actions"
+    target-branch: "main"
     directory: "/"
     schedule:
       interval: "weekly"
-    open-pull-requests-limit: 10
-  - package-ecosystem: docker
+      day: "monday"
+  - package-ecosystem: "docker"
+    target-branch: "main"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 10
-  - package-ecosystem: pip
+  - package-ecosystem: "pip"
+    target-branch: "main"
     directory: "/"
     schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 10
+      interval: "daily"

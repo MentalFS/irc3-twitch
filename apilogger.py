@@ -13,7 +13,7 @@ from tzlocal import get_localzone
 
 __doc__ = '''
 ==============================================
-:mod:`twitchdumper.py` Twitch statistics plugin
+:mod:`apilogger.py` Twitch statistics plugin
 ==============================================
 
 Log statistics for twitch channels in raw json format
@@ -24,14 +24,14 @@ Log statistics for twitch channels in raw json format
 Usage::
 
 	>>> bot = IrcBot(**{
-	...	 'twitchdumper': {
-	...		 'handler': 'twitchdumper.file_handler',
+	...	 'apilogger': {
+	...		 'handler': 'apilogger.file_handler',
 	...	 },
 	... })
-	>>> bot.include('twitchdumper')
+	>>> bot.include('apilogger')
 
 Configuration::
-	>>> [twitchdumper]
+	>>> [apilogger]
 	... client-id=<Client ID> (mandatory)
 	... client-secret=<Client Secret> (mandatory)
 	... chunk-size=<Maximum channels per request> (optional)

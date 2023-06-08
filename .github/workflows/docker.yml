@@ -47,6 +47,7 @@ jobs:
           push: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Prune images older than 7 days
+        if: ${{ github.ref == 'refs/heads/main' }}
         uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
           token: ${{ secrets.PACKAGE_DELETE_TOKEN }}

@@ -1,4 +1,10 @@
-# ToDos and Notes
+# Ideas for future development
+
+## twitch.py
+- command guard based on mod/vip/sub
+- provide requests session (see session in feeds.py or search.py)
+  - https://stackoverflow.com/questions/42601812/python-requests-url-base-in-session
+- move token maintenance here
 
 ## apilogger.py
 - remove `view_count` from delta - delta will be empty
@@ -6,13 +12,6 @@
 - alerts (push to Discord webhook)
   - on change of `type` or `broadcaster_type`
   - when channel can't be found anymore/is banned or deleted
-- option to only log live channels
-
-## twitch.py
-- command guard based on mod/vip/sub
-- provide requests session (see session in feeds.py or search.py)
-  - https://stackoverflow.com/questions/42601812/python-requests-url-base-in-session
-- move token maintenance here
 
 ## other ideas
 - configurable commands that reply a fixed text

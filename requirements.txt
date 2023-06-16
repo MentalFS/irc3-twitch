@@ -1,5 +1,6 @@
 irc3==1.1.10
-requests
-aiocron
-tzlocal
-feedparser
+
+aiocron==1.8
+feedparser==6.0.10
+requests==2.31.0
+tzlocal==5.0.1

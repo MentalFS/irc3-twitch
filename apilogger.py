@@ -139,7 +139,8 @@ class TwitchLogger:
 					self.process(api='helix', endpoint='user',
 						channelname=helix_user['login'], data=helix_user, delta=delta)
 		except Exception as e:
-			self.bot.log.error(e, stack_info=self.channel_count<0)
+			self.bot.log.error('Exception: {name}'.format(name=type(e).__name__))
+			self.bot.log.debug(e, stack_info=False)
 			self.channel_count = -1
 
 	def poll_stream_chunk(self, *chunk):
@@ -167,7 +168,8 @@ class TwitchLogger:
 					self.process(api='helix', endpoint='stream',
 						channelname=channelname, data=helix_stream, delta=delta)
 		except Exception as e:
-			self.bot.log.error(e, stack_info=self.channel_count<0)
+			self.bot.log.error('Exception: {name}'.format(name=type(e).__name__))
+			self.bot.log.debug(e, stack_info=False)
 			self.channel_count = -1
 
 
@@ -224,7 +226,8 @@ class TwitchLogger:
 				self.bot.log.info('Refreshed API token')
 
 		except Exception as e:
-			self.bot.log.error(e, stack_info=self.channel_count<0)
+			self.bot.log.error('Exception: {name}'.format(name=type(e).__name__))
+			self.bot.log.debug(e, stack_info=False)
 			self.channel_count = -1
 
 	@irc3.extend

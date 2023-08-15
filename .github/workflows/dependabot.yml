@@ -8,11 +8,12 @@ permissions:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: mentalfs/irc3-twitch
-  TAG: build
+  TAG: latest
 
 jobs:
-  build:
+  docker:
     runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
 
     steps:
       - name: Checkout repository
@@ -20,6 +21,12 @@ jobs:
 
       - name: Setup Docker buildx
         uses: docker/setup-buildx-action@v2
+
+      - name: Extract Docker metadata
+        id: meta
+        uses: docker/metadata-action@v4
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Build Docker image
         id: build-and-push
@@ -33,7 +40,7 @@ jobs:
           push: false
 
   automerge:
-    needs: [build]
+    needs: [docker]
     runs-on: ubuntu-latest
     if: ${{ github.actor == 'dependabot[bot]' }}
 

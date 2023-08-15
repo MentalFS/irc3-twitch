@@ -13,6 +13,8 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -54,5 +56,5 @@ jobs:
           container: irc3-twitch
           dry-run: false
           keep-younger-than: 7
-          keep-last: 2
+          keep-last: 7
           prune-untagged: true

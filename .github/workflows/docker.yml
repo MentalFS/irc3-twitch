@@ -1,5 +1,9 @@
 name: Docker
-on: [push, workflow_dispatch]
+on:
+  - push
+  - schedule:
+    - cron: '15 11 1,15 * MON-FRI'
+  - workflow_dispatch
 
 permissions:
   contents: read

@@ -7,7 +7,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: mentalfs/irc3-twitch
+  IMAGE_AUTHOR: mentalfs
+  IMAGE_NAME: irc3-twitch
   TAG: latest
 
 jobs:
@@ -34,14 +35,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_AUTHOR }}/${{ env.IMAGE_NAME }}
 
       - name: Build Docker image and push it to ${{ env.REGISTRY }} if on main branch
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
           context: .
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_AUTHOR }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -52,8 +53,8 @@ jobs:
         uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
           token: ${{ secrets.PACKAGE_DELETE_TOKEN }}
-          user: mentalfs
-          container: irc3-twitch
+          user: ${{ env.IMAGE_AUTHOR }}
+          container: ${{ env.IMAGE_NAME }}
           dry-run: false
           keep-younger-than: 7
           keep-last: 7

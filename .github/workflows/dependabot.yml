@@ -7,7 +7,8 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: mentalfs/irc3-twitch
+  IMAGE_AUTHOR: mentalfs
+  IMAGE_NAME: irc3-twitch
   TAG: latest
 
 jobs:
@@ -26,14 +27,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v4
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_AUTHOR }}/${{ env.IMAGE_NAME }}
 
       - name: Build Docker image
         id: build-and-push
         uses: docker/build-push-action@v4
         with:
           context: .
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_AUTHOR }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

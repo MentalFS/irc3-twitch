@@ -2,7 +2,7 @@ name: Docker
 on:
   push:
   schedule:
-    - cron: '15 11 1,15 * MON-FRI'
+    - cron: '15 5 1 * *'
   workflow_dispatch:
 
 permissions:

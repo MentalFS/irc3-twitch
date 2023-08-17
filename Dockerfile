@@ -1,5 +1,7 @@
-FROM python:3.11.4-alpine
+FROM alpine:3.18.3 AS python3-alpine
+RUN apk add --no-cache python3 py3-pip ca-certificates tzdata
 
+FROM python3-alpine AS build
 WORKDIR /opt/irc3
 COPY ./requirements.txt ./
 RUN PIP_ROOT_USER_ACTION=ignore pip install --no-cache-dir -r requirements.txt

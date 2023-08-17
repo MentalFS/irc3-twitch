@@ -1,12 +1,9 @@
 NAME = irc3-twitch
 
-.PHONY: build build-pull pull release
+.PHONY: build pull release
 
 build:
 	docker build -t $(NAME):build .
-
-build-pull:
-	docker build --pull -t $(NAME):build .
 
 pull:
 	docker build --pull .

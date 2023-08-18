@@ -1,0 +1,29 @@
+name: Prune
+on: [push, workflow_dispatch]
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_AUTHOR: mentalfs
+  IMAGE_NAME: irc3-twitch
+  TAG: latest
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Prune old untagged images
+        if: ${{ github.ref == 'refs/heads/main' || github.actor != 'dependabot[bot]' }}
+        uses: vlaurin/action-ghcr-prune@v0.5.0
+        with:
+          token: ${{ secrets.PACKAGE_DELETE_TOKEN }}
+          user: ${{ env.IMAGE_AUTHOR }}
+          container: ${{ env.IMAGE_NAME }}
+          dry-run: false
+          keep-younger-than: 3
+          keep-last: 7
+          prune-untagged: true

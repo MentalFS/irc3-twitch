@@ -7,11 +7,15 @@
   - only call the API when the endpoint is needed (event registration)
 
 ## apilogger.py
-- remove `view_count` from delta - delta will be empty
-  - dont't write delta when it's empty and increase poll interval
-  - option to disable user logging to file
-- read current log to determine delta base
+- remove `view_count` from user delta
+- dont't write delta when it's empty/`None` and increase poll interval
+- only log endpoints when live
+- add channel endpoint
 - alerts (push to Discord webhook) on change of `type` or `broadcaster_type`
+
+## rawlogger.py
+- rework filters to blacklist by IRC message type
+- enable blacklisting IRC message types by channel (list)
 
 ## other ideas
 - configurable commands that reply a fixed text

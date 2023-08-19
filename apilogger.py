@@ -45,8 +45,7 @@ Available handlers:
 
 
 class file_handler:
-	"""Write logs to file in ~/.irc3/logs
-	"""
+	"""Write logs to file in ~/.irc3/logs"""
 
 	requires = [
 		'twitch',
@@ -68,7 +67,7 @@ class file_handler:
 		self.base_date = {}
 		self.base_file = {}
 
-	def __call__(self, api, endpoint, channelname, data, delta={}):
+	def __call__(self, api, endpoint, channelname, data, delta=None):
 		channel = '#%s' % channelname
 		date = datetime.now(get_localzone())
 		event = dict(api=api, endpoint=endpoint, channelname=channelname,
@@ -85,11 +84,11 @@ class file_handler:
 		is_delta = key in self.base_json and self.base_file[key] == filename and self.base_json[key] == base_json
 
 		with codecs.open(filename, 'a+', self.encoding) as fd:
-			if is_delta:
+			if is_delta and delta:
 				delta_json = json.dumps(delta)
 				fd.write(self.delta_formatter.format(reference=self.base_date[key],
 					delta_json=delta_json, json=delta_json, **event) + '\r\n')
-			else:
+			elif not is_delta:
 				self.base_json[key] = base_json
 				self.base_date[key] = date
 				self.base_file[key] = filename
@@ -98,6 +97,8 @@ class file_handler:
 				fd.write(self.data_formatter.format(data_json=data_json, json=data_json, **event) + '\r\n')
 
 	def merge(self, data, delta):
+		if not delta:
+			return
 		for k, v in delta.items():
 			if (k in data and isinstance(data[k], dict) and isinstance(delta[k], collections.Mapping)):
 				self.merge(data[k], delta[k])
@@ -105,25 +106,22 @@ class file_handler:
 				data[k] = delta[k]
 
 
-@cron('0 * * * *')
-def poll_user(bot):
-	bot.poll_user()
-
 @cron('* * * * *')
-def poll_stream(bot):
+def poll_data(bot):
 	bot.check_token(60)
 	bot.poll_stream()
+	bot.poll_channel()
+	bot.poll_user()
 
 
 @irc3.plugin
 class TwitchLogger:
-	"""Logger plugin. Use the :class:~file_handler handler by default
-	"""
+	"""Logger plugin. Use the :class:~file_handler handler by default"""
 
 	def poll_user_chunk(self, *chunk):
 		try:
 			helix_users = requests.get('https://api.twitch.tv/helix/users',
-				params={'id': chunk}, headers=self.headers, timeout=30)
+									   params={'id': chunk}, headers=self.headers, timeout=30)
 			self.bot.log.debug(helix_users.url)
 
 			if helix_users.status_code != 200:
@@ -131,13 +129,26 @@ class TwitchLogger:
 				self.channel_count = -1
 			else:
 				for helix_user in helix_users.json()['data']:
-					delta = {}
-					if 'view_count' in helix_user:
-						delta['view_count'] = helix_user['view_count']
-						del helix_user['view_count']
-
 					self.process(api='helix', endpoint='user',
-						channelname=helix_user['login'], data=helix_user, delta=delta)
+								 channelname=helix_user['login'], data=helix_user)
+		except Exception as e:
+			self.bot.log.error('Exception: {name}'.format(name=type(e).__name__))
+			self.bot.log.debug(e, stack_info=False)
+			self.channel_count = -1
+
+	def poll_channel_chunk(self, *chunk):
+		try:
+			helix_channels = requests.get('https://api.twitch.tv/helix/channels',
+									   params={'broadcaster_id': chunk}, headers=self.headers, timeout=30)
+			self.bot.log.debug(helix_channels.url)
+
+			if helix_channels.status_code != 200:
+				self.bot.log.error('https://api.twitch.tv/helix/channels - {r.status_code}\n{r.text}'.format(r=helix_channels))
+				self.channel_count = -1
+			else:
+				for helix_channel in helix_channels.json()['data']:
+					self.process(api='helix', endpoint='channel',
+								 channelname=helix_channel['broadcaster_login'], data=helix_channel)
 		except Exception as e:
 			self.bot.log.error('Exception: {name}'.format(name=type(e).__name__))
 			self.bot.log.debug(e, stack_info=False)
@@ -234,6 +245,11 @@ class TwitchLogger:
 	def poll_user(self):
 		for chunk in self.chunk_channels():
 			threading.Thread(target=self.poll_user_chunk, args=(chunk)).start()
+
+	@irc3.extend
+	def poll_channel(self):
+		for chunk in self.chunk_channels():
+			threading.Thread(target=self.poll_channel_chunk, args=(chunk)).start()
 
 	@irc3.extend
 	def poll_stream(self):

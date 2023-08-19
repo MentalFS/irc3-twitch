@@ -5,4 +5,7 @@ logs/
 
 *.sw?
 .idea
+.run
+
+venv
 

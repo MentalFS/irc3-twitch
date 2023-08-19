@@ -34,8 +34,7 @@ Available handlers:
 
 
 class file_handler:
-	"""Write logs to file in ~/.irc3/logs
-	"""
+	"""Write logs to file in ~/.irc3/logs"""
 
 	def __init__(self, bot):
 		config = {
@@ -59,8 +58,7 @@ class file_handler:
 
 @irc3.plugin
 class RawLogger:
-	"""Logger plugin. Use the :class:~file_handler handler by default
-	"""
+	"""Logger plugin. Use the :class:~file_handler handler by default"""
 
 	def message_filtered(self, message):
 		if not self.message_filters:

@@ -8,11 +8,9 @@
 - warning if a joined channel gets no `ROOMSTATE`
 
 ## apilogger.py
-- remove `view_count` from user delta
-- dont't write delta when it's empty/`None` and increase poll interval
-- only log endpoints when live
-- add channel endpoint
+- evaluate sorting of list and deleting fields
 - alerts (push to Discord webhook) on change of `type` or `broadcaster_type`
+- only log endpoints when live
 
 ## rawlogger.py
 - rework filters to blacklist by IRC message type

@@ -61,7 +61,7 @@ class Twitch:
 			self.bot.privmsg(target, data)
 			self.bot.log.debug('Repeated NOTICE as PRIVMSG: %s %s' % (target, data))
 		else:
-			self.bot.log.warn('Unsupported NOTICE target: %s %s' % (target, data))
+			self.bot.log.warn('NOTICE to user not supported: %s %s' % (target, data))
 
 	@irc3.event('(@\S+ )?PRIVMSG (?P<user>[^#]\S+) :(?P<data>.*)', iotype='out')
 	def on_send_whisper(self, user, data):

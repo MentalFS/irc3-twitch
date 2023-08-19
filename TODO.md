@@ -5,6 +5,7 @@
 - move api calls to `twitch.py` to provide data to `apilogger.py`
   - and later on data for command replacements
   - only call the API when the endpoint is needed (event registration)
+- warning if a joined channel gets no `ROOMSTATE`
 
 ## apilogger.py
 - remove `view_count` from user delta

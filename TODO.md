@@ -9,11 +9,9 @@
 
 ## apilogger.py
 - alerts (push to Discord webhook) on change of `type` or `broadcaster_type`
-- only log endpoints when live
 
 ## rawlogger.py
-- rework filters to blacklist by IRC message type
-- enable additional blacklisting IRC message types by channel (list)
+- enable additional IRC message types by channel
 
 ## other ideas
 - configurable commands that reply a fixed text
@@ -22,7 +20,6 @@
 - automatically join in when people spam certain words/patterns like "!play" or "nice"
 
 ## general
-- cleanup or migration of old logs (before deltas were used)
-- migration from multiple log files to one per channel
+- migration from multiple log files to one per channel + delta generation
 - tools to analyze `apilogger.py` logs
 - provide example `config.ini` file

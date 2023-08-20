@@ -47,15 +47,11 @@ Available handlers:
 class file_handler:
 	"""Write logs to file in ~/.irc3/logs"""
 
-	requires = [
-		'twitch',
-	]
-
 	def __init__(self, bot):
 		config = {
-			'filename': '~/.irc3/logs/{host}/{channel}-{date:%Y-%m-%d}.{endpoint}.log',
-			'data_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} {data_json}',
-			'delta_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} @{reference:%Y-%m-%dT%H:%M:%S.%f%z} {delta_json}'
+			'filename': '~/.irc3/logs/{host}/{channel}-{date:%Y-%m-%d}.api.log',
+			'data_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} {endpoint} {data_json}',
+			'delta_formatter': '{date:%Y-%m-%dT%H:%M:%S.%f%z} {api} {endpoint} @{reference:%Y-%m-%dT%H:%M:%S.%f%z} {delta_json}'
 		}
 		config.update(bot.config.get(__name__, {}))
 		self.filename = config['filename']
@@ -117,6 +113,10 @@ def poll_data(bot):
 @irc3.plugin
 class TwitchLogger:
 	"""Logger plugin. Use the :class:~file_handler handler by default"""
+
+	requires = [
+		'twitch',
+	]
 
 	def poll_user_chunk(self, *chunk):
 		try:

@@ -166,11 +166,6 @@ class TwitchLogger:
 				for helix_stream in helix_streams.json()['data']:
 					channelname = self.bot.twitch.channels[helix_stream['user_id']]
 
-					if 'community_ids' in helix_stream: del helix_stream['community_ids']
-					if 'tag_ids' in helix_stream and isinstance(helix_stream['tag_ids'], list):
-						helix_stream['tag_ids'].sort()
-					if 'thumbnail_url' in helix_stream: del helix_stream['thumbnail_url']
-
 					delta = {}
 					if 'viewer_count' in helix_stream:
 						delta['viewer_count'] = helix_stream['viewer_count']

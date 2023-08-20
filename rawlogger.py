@@ -65,7 +65,7 @@ class RawLogger:
 			return False
 
 		if command in self.message_ignores:
-			self.bot.log.debug('Filtered: %s' % message)
+			self.bot.log.debug('Ignored: %s' % message)
 			return True
 
 		return False

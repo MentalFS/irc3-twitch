@@ -8,6 +8,7 @@
 - warning if a joined channel gets no `ROOMSTATE`
 
 ## apilogger.py
+- ensure thread safety when writing files
 - alerts (push to Discord webhook) on change of `type` or `broadcaster_type`
 
 ## rawlogger.py

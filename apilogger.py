@@ -85,12 +85,12 @@ class file_handler:
 				fd.write(self.delta_formatter.format(reference=self.base_date[key],
 					delta_json=delta_json, json=delta_json, **event) + '\r\n')
 			elif not is_delta:
-				self.base_json[key] = base_json
-				self.base_date[key] = date
-				self.base_file[key] = filename
 				self.merge(data, delta)
 				data_json = json.dumps(data)
 				fd.write(self.data_formatter.format(data_json=data_json, json=data_json, **event) + '\r\n')
+				self.base_json[key] = base_json
+				self.base_date[key] = date
+				self.base_file[key] = filename
 
 	def merge(self, data, delta):
 		if not delta:

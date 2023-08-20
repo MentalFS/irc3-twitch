@@ -60,16 +60,15 @@ class file_handler:
 class RawLogger:
 	"""Logger plugin. Use the :class:~file_handler handler by default"""
 
-	def message_filtered(self, message):
-		if not self.message_filters:
+	def message_ignored(self, command, message):
+		if not self.message_ignores:
 			return False
 
-		for message_filter in self.message_filters:
-			if message_filter in message:
-				return False
+		if command in self.message_ignores:
+			self.bot.log.debug('Filtered: %s' % message)
+			return True
 
-		# self.bot.log.debug('*** FILTERED ***')
-		return True
+		return False
 
 	def __init__(self, bot):
 		self.bot = bot
@@ -79,25 +78,23 @@ class RawLogger:
 		self.bot.log.debug('%s Handler: %s %s', self.__module__, handler.__module__, handler.__name__)
 		self.handler = handler(bot)
 
-		self.message_filters = []
-		#self.bot.log.info('Filters:')
-		for message_filter in as_list(self.config.get('filters')):
-			self.message_filters.append(message_filter)
-			#self.bot.log.info(message_filter)
+		self.message_ignores = []
+		for message_ignore in as_list(self.config.get('ignore')):
+			self.message_ignores.append(message_ignore)
 
 	def process(self, **kwargs):
-		if self.message_filtered(kwargs['raw']):
+		if self.message_ignored(kwargs['command'], kwargs['raw']):
 			return
 
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
 		self.handler(kw)
 
-	@irc3.event('(?P<pre>(@\S+ )?:\S+ \S+ #)(?P<channelname>\S+)(?P<post>.*)')
-	def on_input(self, pre, channelname, post, **kwargs):
+	@irc3.event('(?P<pre>(@\S+ )?:\S+ (?P<command>\S+) #)(?P<channelname>\S+)(?P<post>.*)')
+	def on_input(self, pre, command, channelname, post, **kwargs):
 		raw = pre + channelname + post
-		self.process(channelname=channelname, raw=raw, **kwargs)
+		self.process(command=command, channelname=channelname, raw=raw, **kwargs)
 
-	@irc3.event('(?P<pre>(@\S+ )?\S+ #)(?P<channelname>\S+)(?P<post>.*)', iotype='out')
-	def on_output(self, pre, channelname, post, **kwargs):
+	@irc3.event('(?P<pre>(@\S+ )?(?P<command>\S+) #)(?P<channelname>\S+)(?P<post>.*)', iotype='out')
+	def on_output(self, pre, command, channelname, post, **kwargs):
 		raw = pre + channelname + post
-		self.process(channelname=channelname, raw=raw, **kwargs)
+		self.process(command=command, channelname=channelname, raw=raw, **kwargs)

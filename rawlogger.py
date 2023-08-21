@@ -25,6 +25,11 @@ Usage::
 	...	 },
 	... })
 	>>> bot.include('rawlogger')
+	
+Configuration::
+	>>> [rawlogger]
+	... filename=<Path like in other log modules>
+	... ignore=<List of IRC commands to ignore> e.g. PART JOIN (optional)
 
 
 Available handlers:

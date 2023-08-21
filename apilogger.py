@@ -62,6 +62,7 @@ class file_handler:
 		self.base_json = {}
 		self.base_date = {}
 		self.base_file = {}
+		self.lock = threading.Lock()
 
 	def __call__(self, api, endpoint, channelname, data, delta=None):
 		channel = '#%s' % channelname
@@ -70,27 +71,29 @@ class file_handler:
 			data=data, delta=delta, channel=channel, date=date)
 
 		filename = self.filename.format(**event)
-		if not os.path.isfile(filename):
-			dirname = os.path.dirname(filename)
-			if not os.path.isdir(dirname):  # pragma: no cover
-				os.makedirs(dirname, exist_ok=True)
-
 		key = channel+'|'+endpoint+'|'+api
+
 		base_json = json.dumps(data)
 		is_delta = key in self.base_json and self.base_file[key] == filename and self.base_json[key] == base_json
 
-		with codecs.open(filename, 'a+', self.encoding) as fd:
-			if is_delta and delta:
-				delta_json = json.dumps(delta)
-				fd.write(self.delta_formatter.format(reference=self.base_date[key],
-					delta_json=delta_json, json=delta_json, **event) + '\r\n')
-			elif not is_delta:
-				self.merge(data, delta)
-				data_json = json.dumps(data)
-				fd.write(self.data_formatter.format(data_json=data_json, json=data_json, **event) + '\r\n')
-				self.base_json[key] = base_json
-				self.base_date[key] = date
-				self.base_file[key] = filename
+		delta_json = json.dumps(delta)
+		self.merge(data, delta)
+		data_json = json.dumps(data)
+
+		with self.lock:
+			if not os.path.isfile(filename):
+				dirname = os.path.dirname(filename)
+				if not os.path.isdir(dirname):  # pragma: no cover
+					os.makedirs(dirname, exist_ok=True)
+			with codecs.open(filename, 'a+', self.encoding) as fd:
+				if is_delta and delta:
+					fd.write(self.delta_formatter.format(reference=self.base_date[key],
+						delta_json=delta_json, json=delta_json, **event) + '\r\n')
+				elif not is_delta:
+					fd.write(self.data_formatter.format(data_json=data_json, json=data_json, **event) + '\r\n')
+					self.base_json[key] = base_json
+					self.base_date[key] = date
+					self.base_file[key] = filename
 
 	def merge(self, data, delta):
 		if not delta:

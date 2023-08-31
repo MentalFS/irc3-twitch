@@ -94,6 +94,8 @@ class file_handler:
 					self.base_json[key] = base_json
 					self.base_date[key] = date
 					self.base_file[key] = filename
+				else:
+					os.utime(filename)
 
 	def merge(self, data, delta):
 		if not delta:

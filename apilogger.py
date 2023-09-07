@@ -175,6 +175,9 @@ class TwitchLogger:
 					if 'viewer_count' in helix_stream:
 						delta['viewer_count'] = helix_stream['viewer_count']
 						del helix_stream['viewer_count']
+					if 'user_login' in helix_stream:
+						delta['user_login'] = helix_stream['user_login']
+						del helix_stream['user_login']
 
 					self.process(api='helix', endpoint='stream',
 						channelname=channelname, data=helix_stream, delta=delta)

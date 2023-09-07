@@ -17,7 +17,7 @@ jobs:
 
     steps:
       - name: Prune old untagged images
-        if: ${{ github.ref == 'refs/heads/main' || github.actor != 'dependabot[bot]' }}
+        if: ${{ github.ref == 'refs/heads/main' || github.actor == 'dependabot[bot]' }}
         uses: vlaurin/action-ghcr-prune@v0.5.0
         with:
           token: ${{ secrets.PACKAGE_DELETE_TOKEN }}

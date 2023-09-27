@@ -1,5 +1,7 @@
 name: Prune
-on: [push, workflow_dispatch]
+on:
+  schedule:
+    - cron: "0 12 * * SUN"
 
 permissions:
   contents: read

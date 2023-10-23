@@ -10,16 +10,13 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 1
   - package-ecosystem: "docker"
     target-branch: "main"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 1
   - package-ecosystem: "pip"
     target-branch: "main"
     directory: "/"
     schedule:
       interval: "daily"
-    open-pull-requests-limit: 10

@@ -1,4 +1,4 @@
-FROM alpine:3.18.4 AS python3-alpine
+FROM alpine:3.18.5 AS python3-alpine
 RUN apk add --no-cache python3 py3-pip ca-certificates tzdata
 
 FROM python3-alpine AS build

@@ -1,4 +1,4 @@
-FROM alpine:3.18.5 AS python3-alpine
+FROM alpine:3.19.0 AS python3-alpine
 
 RUN apk add --no-cache python3 py3-pip ca-certificates tzdata
 ENV VIRTUAL_ENV=/opt/venv

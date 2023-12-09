@@ -10,9 +10,6 @@
 ## apilogger.py
 - alerts (push to Discord webhook) on change of `type` or `broadcaster_type`
 
-## rawlogger.py
-- enable additional IRC message types by channel
-
 ## other ideas
 - configurable commands that reply a fixed text
   - replacements: https://docs.python.org/3/tutorial/inputoutput.html#the-string-format-method
@@ -20,6 +17,5 @@
 - automatically join in when people spam certain words/patterns like "!play" or "nice"
 
 ## general
-- migration from multiple log files to one per channel + delta generation
 - tools to analyze `apilogger.py` logs
 - provide example `config.ini` file

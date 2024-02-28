@@ -17,7 +17,6 @@ fi
 
 set -e
 which irc3 >/dev/null || { echo "Could not find irc3 in path." 1>&2; exit 1; }
-cd "$(dirname "$(readlink -f "$0")")"
 
 CONFIG="${1%.ini}"
 test -n "${CONFIG}" || { echo "No configuration specified." 1>&2; exit 1; }

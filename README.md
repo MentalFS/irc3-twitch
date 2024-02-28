@@ -18,6 +18,9 @@ Logs [JSON API requests](https://dev.twitch.tv/docs/api) about the Twitch channe
 Logs messages (only to channels) as raw IRC lines to files.
 * Requires [tzlocal](https://pypi.org/project/tzlocal/) / [pytz](https://pypi.org/project/pytz/).
 
+### sigterm.py
+Will gracefully close the irc connection before terminating the process.
+
 ## Scripts
 
 ### irc3-bot

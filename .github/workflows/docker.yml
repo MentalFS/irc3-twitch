@@ -1,5 +1,17 @@
 name: Docker
-on: [push, workflow_dispatch]
+on:
+  workflow_call:
+    inputs:
+      push:
+        required: true
+        type: boolean
+  workflow_dispatch:
+    inputs:
+      push:
+        required: true
+        type: boolean
+        default: true
+
 
 permissions:
   contents: read
@@ -14,7 +26,6 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' }}
 
     steps:
       - name: Checkout repository
@@ -45,6 +56,6 @@ jobs:
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_AUTHOR }}/${{ env.IMAGE_NAME }}:${{ env.TAG }}
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false
-          push: ${{ github.ref == 'refs/heads/main' }}
+          push: ${{ inputs.push }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

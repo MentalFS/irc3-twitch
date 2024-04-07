@@ -7,14 +7,14 @@ They are mostly centered around usage on the [Twitch network](https://dev.twitch
 
 ## Plugins
 
-### `plugins.twitch`
+### Twitch - `plugins.twitch`
 Enables IRCv3 capabilities on the Twitch network and does some basic handling.
 
-### `plugins.apilogger`
+### API Logger - `plugins.apilogger`
 Logs [JSON API requests](https://dev.twitch.tv/docs/api) about the Twitch channels the client is joined to. Those can become quite large, so they only write a timestamp when the JSON object didn't change.
 * Requires [tzlocal](https://pypi.org/project/tzlocal/) / [pytz](https://pypi.org/project/pytz/) and [requests](https://pypi.org/project/requests/).
 
-### `plugins.rawlogger`
+### RAW Logger - `plugins.rawlogger`
 Logs messages (only to channels) as raw IRC lines to files.
 * Requires [tzlocal](https://pypi.org/project/tzlocal/) / [pytz](https://pypi.org/project/pytz/).
 
@@ -31,7 +31,7 @@ A starter script to keep IRC bots running via cron.
 docker run -d -v /local/path/to/my_config.ini:/opt/irc3/my_config.ini:ro -e IRC3_CONFIG=my_config.ini ghcr.io/mentalfs/irc3-twitch
 ```
 
-## Limiations
+## Limitations
 - Twitch has removed all IRC commands, so scripts can't use `/ban`, `/timeout` or any other command.
 - Whispering also isn't possible anymore via IRC.
 - Hint: There are much more fleshed out libraries specifically tailored to Twitch via Websocket or HTTP API

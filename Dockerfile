@@ -6,9 +6,8 @@ RUN pip install --no-cache-dir -r requirements.txt;
 
 COPY plugins /opt/irc3/plugins
 RUN set -eux; \
+    test -f ./plugins/twitch.py; \
     python -m compileall ./; \
-	ls -lh plugins; \
-	test -f ./plugins/twitch.py; \
     irc3 --version; \
     mkdir cache; \
     chmod a+rw cache

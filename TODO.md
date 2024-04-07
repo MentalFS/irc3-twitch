@@ -1,13 +1,13 @@
 # Ideas for future development
 
-## twitch.py
+## `plugins.twitch`
 - command guard based on mod/vip/sub
-- move api calls to `twitch.py` (or an own plugin) to provide data to `apilogger.py`
+- move api calls to `plugins.twitch` (or an own plugin) to provide data to `plugins.apilogger`
   - and later on data for command replacements
   - only call the API when the endpoint is needed (event registration or own plugins per endpoint)
 - warning if a joined channel gets no `ROOMSTATE`
 
-## apilogger.py
+## `plugins.apilogger`
 - alerts (push to Discord webhook) on change of `type` or `broadcaster_type`
 
 ## other ideas
@@ -17,5 +17,6 @@
 - automatically join in when people spam certain words/patterns like "!play" or "nice"
 
 ## general
-- tools to analyze `apilogger.py` logs
+- rebuild the shell scripts as python scripts and make them entrypoints
+- tools to analyze `plugins.apilogger` logs
 - provide example `config.ini` file

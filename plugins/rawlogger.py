@@ -20,14 +20,14 @@ Log channels in raw format
 Usage::
 
 	>>> bot = IrcBot(**{
-	...	 'rawlogger': {
+	...	 'plugins.rawlogger': {
 	...		 'handler': 'rawlogger.file_handler',
 	...	 },
 	... })
-	>>> bot.include('rawlogger')
+	>>> bot.include('plugins.rawlogger')
 	
 Configuration::
-	>>> [rawlogger]
+	>>> [plugins.rawlogger]
 	... filename=<Path like in other log modules>
 	... ignore=<List of IRC commands to ignore> e.g. PART JOIN (optional)
 

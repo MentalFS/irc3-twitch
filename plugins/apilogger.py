@@ -24,14 +24,14 @@ Log statistics for twitch channels in raw json format
 Usage::
 
 	>>> bot = IrcBot(**{
-	...	 'apilogger': {
+	...	 'plugins.apilogger': {
 	...		 'handler': 'apilogger.file_handler',
 	...	 },
 	... })
-	>>> bot.include('apilogger')
+	>>> bot.include('plugins.apilogger')
 
 Configuration::
-	>>> [apilogger]
+	>>> [plugins.apilogger]
 	... client-id=<Client ID> (mandatory)
 	... client-secret=<Client Secret> (mandatory)
 	... chunk-size=<Maximum channels per request> (optional)
@@ -120,7 +120,7 @@ class TwitchLogger:
 	"""Logger plugin. Use the :class:~file_handler handler by default"""
 
 	requires = [
-		'twitch',
+		'plugins.twitch',
 	]
 
 	def poll_user_chunk(self, *chunk):

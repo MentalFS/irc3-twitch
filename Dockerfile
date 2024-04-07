@@ -4,9 +4,11 @@ WORKDIR /opt/irc3
 COPY ./requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt;
 
-COPY plugins ./
+COPY plugins /opt/irc3/plugins
 RUN set -eux; \
     python -m compileall ./; \
+	ls -lh plugins; \
+	test -f ./plugins/twitch.py; \
     irc3 --version; \
     mkdir cache; \
     chmod a+rw cache

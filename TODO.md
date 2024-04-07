@@ -10,6 +10,8 @@
 
 ## other ideas
 - automatically join in when people spam certain words/patterns like "!play" or "nice"
+- feed handler that posts to Discord via webhook
+- feed handler that can strip HTML code
 
 ## general
 - rebuild the shell scripts as python scripts and make them entrypoints

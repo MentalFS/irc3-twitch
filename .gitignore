@@ -1,13 +1,11 @@
 __pycache__
-/build
 
 /*.egg-info
 /*.ini
-logs/
+/build
+/logs
+/venv
 
 *.sw?
 .idea
 .run
-
-venv
-

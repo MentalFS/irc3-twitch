@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 from setuptools import setup
-import time
 
 setup(
 	name='irc3-twitch',
 	description='Some plugins for irc3',
-	version='0.0.%s.dev0' % time.time(),
+	version='0.0.0.0.dev0',
 
 	packages=['plugins'],
 	install_requires=['irc3', 'aiocron', 'feedparser', 'requests', 'tzlocal'],

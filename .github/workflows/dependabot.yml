@@ -6,12 +6,6 @@ permissions:
   pull-requests: write
   packages: write
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_AUTHOR: mentalfs
-  IMAGE_NAME: boinc-client
-  TAG: latest
-
 jobs:
   docker:
     uses: ./.github/workflows/docker.yml

@@ -11,7 +11,6 @@ env:
   REGISTRY: ghcr.io
   IMAGE_AUTHOR: mentalfs
   IMAGE_NAME: irc3-twitch
-  TAG: latest
 
 jobs:
   prune:

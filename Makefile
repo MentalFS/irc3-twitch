@@ -22,3 +22,6 @@ test-local:
 	bin/irc3-bot test --test
 
 test: test-docker
+
+clean:
+	rm -rfv venv logs */__pycache__ *.egg-info build

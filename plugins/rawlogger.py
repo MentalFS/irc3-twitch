@@ -94,12 +94,12 @@ class RawLogger:
 		kw = dict(host=self.bot.config.host, channel='#%s' % kwargs['channelname'], date=datetime.now(get_localzone()), **kwargs)
 		self.handler(kw)
 
-	@irc3.event('(?P<pre>(@\S+ )?:\S+ (?P<command>\S+) #)(?P<channelname>\S+)(?P<post>.*)')
+	@irc3.event(r'(?P<pre>(@\S+ )?:\S+ (?P<command>\S+) #)(?P<channelname>\S+)(?P<post>.*)')
 	def on_input(self, pre, command, channelname, post, **kwargs):
 		raw = pre + channelname + post
 		self.process(command=command, channelname=channelname, raw=raw, **kwargs)
 
-	@irc3.event('(?P<pre>(@\S+ )?(?P<command>\S+) #)(?P<channelname>\S+)(?P<post>.*)', iotype='out')
+	@irc3.event(r'(?P<pre>(@\S+ )?(?P<command>\S+) #)(?P<channelname>\S+)(?P<post>.*)', iotype='out')
 	def on_output(self, pre, command, channelname, post, **kwargs):
 		raw = pre + channelname + post
 		self.process(command=command, channelname=channelname, raw=raw, **kwargs)

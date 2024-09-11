@@ -4,16 +4,21 @@ NAME = irc3-twitch
 SHELL := /bin/bash
 
 build:
-	docker build -t $(NAME):build .
+	docker build -t $(NAME):build --progress=plain .
 
 pull:
-	docker build --pull .
+	docker build --pull --progress=plain .
 
 release:
-	docker build --pull -t $(NAME):latest .
+	docker build --pull -t $(NAME):latest --progress=plain .
 
-test:
-	python3 -m venv venv
-	pip install -r requirements.txt
-	source venv/bin/activate
+test-docker: build
+	docker run --rm -it -v "$(CURDIR)/test.ini:/opt/irc3/test.ini:ro" -e IRC3_CONFIG=test.ini $(NAME):build
+
+test-local:
+	python3 -m venv venv; \
+	source venv/bin/activate; \
+	pip install -r requirements.txt; \
 	bin/irc3-bot test --test
+
+test: test-docker

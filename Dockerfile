@@ -8,7 +8,7 @@ COPY plugins /opt/irc3/plugins
 RUN set -eux; \
     test -f ./plugins/twitch.py; \
     python -m compileall ./; \
-    irc3 --version; \
+    irc3 --help; \
     mkdir cache; \
     chmod a+rw cache
 

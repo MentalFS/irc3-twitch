@@ -1,4 +1,4 @@
-FROM python:alpine2.23
+FROM python:alpine3.23
 
 WORKDIR /opt/irc3
 COPY ./requirements.txt ./

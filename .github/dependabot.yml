@@ -15,12 +15,9 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    allow:
-      - dependency-name: "*"
-        version: ["*-alpine"]
     ignore:
       - dependency-name: "*"
-        versions: ["*a*", "*b*", "*rc*"]
+        versions: ["*a*-alpine", "*b*-alpine", "*rc*-alpine"]
   - package-ecosystem: "pip"
     target-branch: "main"
     directory: "/"

@@ -2,7 +2,7 @@ FROM python:alpine3.23
 
 WORKDIR /opt/irc3
 COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt;
+RUN pip install --no-cache-dir -r requirements.txt && pip freeze | tee requirements.txt
 
 COPY plugins /opt/irc3/plugins
 RUN set -eux; \
@@ -16,4 +16,4 @@ ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
 ENV IRC3_LOGGING="--logdate"
 ENV IRC3_CONFIG="config.ini"
-CMD irc3 "${IRC3_LOGGING}" "${IRC3_CONFIG}"
+CMD ["irc3", "${IRC3_LOGGING}", "${IRC3_CONFIG}"]

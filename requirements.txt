@@ -1,6 +1,0 @@
-irc3==1.1.12
-
-aiocron
-feedparser
-requests
-tzlocal

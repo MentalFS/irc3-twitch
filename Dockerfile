@@ -1,16 +1,14 @@
 FROM python:alpine3.24
 
 WORKDIR /opt/irc3
-COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt && pip freeze | tee requirements.txt
-
+COPY ./setup.py ./
 COPY plugins /opt/irc3/plugins
 RUN set -eux; \
-    test -f ./plugins/twitch.py; \
-    python -m compileall ./; \
-    irc3 --help; \
+    pip install --root-user-action=ignore --no-cache-dir --compile .; \
+    python -m compileall plugins; \
     mkdir cache; \
-    chmod a+rw cache
+    chmod a+rw cache; \
+    pip freeze | tee requirements.txt
 
 ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin

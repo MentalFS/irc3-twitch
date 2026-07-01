@@ -16,9 +16,9 @@ test-docker: build
 	docker run --rm -it -v "$(CURDIR)/test.ini:/opt/irc3/config.ini:ro" $(NAME):build
 
 test-local:
-	python3 -m venv venv; \
+	python3 -m venv --system-site-packages venv; \
 	source venv/bin/activate; \
-	pip install -r requirements.txt; \
+	pip install .; \
 	bin/irc3-bot test --test
 
 test: test-docker

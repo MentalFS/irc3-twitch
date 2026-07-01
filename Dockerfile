@@ -2,7 +2,8 @@ FROM python:alpine
 
 WORKDIR /opt/irc3
 COPY ./requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt && pip freeze | tee requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+# && pip freeze | tee requirements.txt
 
 COPY plugins /opt/irc3/plugins
 RUN set -eux; \

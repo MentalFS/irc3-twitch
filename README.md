@@ -28,7 +28,7 @@ A starter script to keep IRC bots running via cron.
 ### Example
 
 ```
-docker run -d -v /local/path/to/my_config.ini:/opt/irc3/my_config.ini:ro -e IRC3_CONFIG=my_config.ini ghcr.io/mentalfs/irc3-twitch
+docker run -d -v /local/path/to/my_config.ini:/opt/irc3/config.ini:ro ghcr.io/mentalfs/irc3-twitch
 ```
 
 ## Limitations

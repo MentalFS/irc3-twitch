@@ -13,7 +13,7 @@ release:
 	docker build --pull -t $(NAME):latest --progress=plain .
 
 test-docker: build
-	docker run --rm -it -v "$(CURDIR)/test.ini:/opt/irc3/test.ini:ro" -e IRC3_CONFIG=test.ini $(NAME):build
+	docker run --rm -it -v "$(CURDIR)/test.ini:/opt/irc3/config.ini:ro" $(NAME):build
 
 test-local:
 	python3 -m venv venv; \

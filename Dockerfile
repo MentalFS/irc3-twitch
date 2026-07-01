@@ -1,4 +1,4 @@
-FROM python:3.15-rc-alpine3.24
+FROM python:alpine
 
 WORKDIR /opt/irc3
 COPY ./requirements.txt ./
@@ -14,6 +14,4 @@ RUN set -eux; \
 
 ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
-ENV IRC3_LOGGING="--logdate"
-ENV IRC3_CONFIG="config.ini"
-CMD ["irc3", "${IRC3_LOGGING}", "${IRC3_CONFIG}"]
+CMD ["irc3", "--logdate", "config.ini"]

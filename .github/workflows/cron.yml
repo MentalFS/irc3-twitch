@@ -1,0 +1,17 @@
+name: Cron
+on:
+  schedule:
+    - cron: '1 1 1 * *'
+      timezone: "Europe/Berlin"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  docker:
+    uses: ./.github/workflows/docker.yml
+    if: ${{ github.actor != 'dependabot[bot]' }}
+    with:
+      push: ${{ github.ref == 'refs/heads/main' }}
+    secrets: inherit

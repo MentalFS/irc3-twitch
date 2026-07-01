@@ -7,7 +7,7 @@ setup(
 	version='0.0.0.0.dev0',
 
 	packages=['plugins'],
-	install_requires=['irc3', 'aiocron', 'feedparser', 'requests', 'tzlocal'],
+	install_requires=['irc3==1.1.12', 'aiocron', 'feedparser', 'requests', 'tzlocal'],
 	entry_points={
 		'console_scripts': ['irc3 = irc3:run']
 	},

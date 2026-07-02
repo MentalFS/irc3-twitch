@@ -26,7 +26,6 @@ shift
 case "$1" in
 	"--logs")
 		shift
-		#tail "$@" "$PWD/logs/${CONFIG}"/*.log \
 		find "$PWD/logs/${CONFIG}" -name '*.log' -size +0 -print0 \
 		| xargs -0r tail -v "$@" \
 		| egrep --color=always "^|^==> |$CONFIG/[^\.]*| <==$"
